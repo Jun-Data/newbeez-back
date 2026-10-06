@@ -7,8 +7,17 @@
 > - 작업 규칙(역할·커밋·스택 주의점) → [CLAUDE.md](CLAUDE.md)
 > - 프론트 진행 상황 → 프론트 레포 `HANDOFF.md`
 
-**마지막 업데이트: 2026-10-06** — F6-1 DB 설정 완료(`bootRun`·`build` 통과). **다음은 F6-2 `participant_logs` 엔티티**
-브랜치 `main` 하나 · origin 동기화 · 워킹트리 깨끗
+**마지막 업데이트: 2026-10-06** — F6-1 완료. **F6-2 진행 중 — 1단계까지 끝났고 다음은 2단계(엔티티 타이핑)**
+🔀 **작업은 브랜치 `feat/participant-log` 에 있다** (`main` 에는 아직 없음 · origin 에 푸시됨)
+
+### ▶ 다른 PC에서 이어갈 때
+
+대화 기록과 `.env`·DB 는 PC를 넘어가지 않는다. 넘어가는 것은 git 에 올린 것뿐이다.
+
+1. **백엔드** — `git pull` 후 `git switch feat/participant-log`
+2. **프론트** — `git pull` (설계 문서가 `0a1f68c` 로 갱신됐다 — 답코드 칸 추가)
+3. **그 PC 의 준비** — 아래 F6-1 표에서 ⬜ 인 것부터(계정 · `.env`). `bootRun` 이 404 까지 가는지 먼저 확인한다
+4. **F6-2 의 2단계부터** 이어간다 (아래 "F6-2 진행 중")
 
 ---
 
@@ -39,7 +48,7 @@
 | | 슬라이스 | 상태 |
 | --- | --- | --- |
 | **F6-1** | **DB 설정** — `application.yml` + 환경변수 접속 → `bootRun` 성공 | ✅ `44e2283` |
-| **F6-2** | `participant_logs` 엔티티 + Repository | ⬜ **다음** |
+| **F6-2** | `participant_logs` 엔티티 + Repository | 🟡 **진행 중** (`feat/participant-log`) |
 | F6-3 | `POST /api/v1/participants` — 4계층 첫 관통 | ⬜ |
 | F6-4 | `GET /api/v1/participants/count` + **1분 캐시** | ⬜ |
 | F6-5 | **CORS** — 브라우저가 직접 부르는 두 엔드포인트만 | ⬜ |
@@ -59,6 +68,7 @@
 | DB `newbeez` | ✅ | ✅ (2026-09-04 기록) |
 | 앱 전용 계정 `newbeez` | ✅ | ⬜ |
 | `.env` | ✅ | ⬜ |
+| `.env` 의 `NEWBEEZ_DDL_AUTO=update` | ⬜ F6-2 3단계에서 | ⬜ F6-2 3단계에서 |
 
 **⬜ 인 PC에서 할 일**
 
@@ -68,7 +78,8 @@
    CREATE USER 'newbeez'@'localhost' IDENTIFIED BY '비밀번호';
    GRANT ALL PRIVILEGES ON newbeez.* TO 'newbeez'@'localhost';
    ```
-2. `.env.example` 을 같은 폴더에 `.env` 로 복사하고 값 3개를 채운다
+2. `.env.example` 을 같은 폴더에 `.env` 로 복사하고 DB 값 3개를 채운다
+   - ⚠️ F6-2 를 이어가는 중이면 `NEWBEEZ_DDL_AUTO=update` 줄은 **앞에 `#` 을 붙여 꺼 둔다.** 3단계에서 `#` 을 떼어 켠다 — 2단계의 "일부러 실패"를 보려면 꺼져 있어야 한다
 3. `./gradlew bootRun` → `Started NewbeezBackApplication` 이 찍히고 http://localhost:8080 이 **404** 면 성공 (컨트롤러가 아직 없어 404 가 정상)
 
 **겪은 함정**
@@ -79,18 +90,94 @@
 - 로그의 `The following 1 profile is active: "loc"` 는 `jun98` PC 의 사용자 환경변수 탓이다(다른 프로젝트용). 해롭지 않지만 **설정을 프로필에 기대면 안 되는 이유**다 → [CLAUDE.md](CLAUDE.md) 규칙
 - 부팅 로그의 `spring.jpa.open-in-view is enabled by default` WARN 은 실패가 아니다. F6-3 에서 다룬다
 
-### ⬜ F6-2 `participant_logs` 엔티티 ← 다음
+### 🟡 F6-2 `participant_logs` 엔티티 — 진행 중 (브랜치 `feat/participant-log`)
 
-테이블 정의는 ARCHITECTURE §5.2. 시작 전에 정할 것 둘:
+**설계 원본은 이미 고쳤다** — 프론트 `docs/ARCHITECTURE.md` §5.2 (프론트 커밋 `0a1f68c`).
 
-- **`ddl-auto`** — 아직 설정하지 않았다. MySQL 에서는 기본값이 `none` 이라 **엔티티를 만들어도 테이블이 생기지 않는다.** 학습 단계용 값을 여기서 정한다 (배포에서 켜지지 않게 할 방법 포함). **배포 전 Flyway 전환**은 확정 사항
-- **`created_at` 의 시간대** — `DATETIME` 은 시간대 정보가 없다. 로컬(KST)과 배포 서버의 시간대가 다르면 값이 섞이고, **쌓인 뒤에는 고치기 어렵다.** 첫 행이 들어가기 전에 정한다
+**2026-10-06 에 정한 것**
+
+| | 결정 | 이유 |
+| --- | --- | --- |
+| 칸 수 | **5칸** — `answer_code VARCHAR(32)` NULL 허용을 추가 | 분석용. 기록하지 않은 답은 되살릴 수 없다. 백엔드는 해석하지 않고 보관만 한다 |
+| `ddl-auto` | `${NEWBEEZ_DDL_AUTO:validate}` — 기본은 `validate`, 로컬 `.env` 에서만 `update` | 값을 안 준 환경(배포)에서 테이블이 멋대로 바뀌지 않게. **배포 전 Flyway 전환**은 확정 사항 |
+| `created_at` | 자바 `Instant` → **UTC 로 저장** | PC(KST)와 배포 서버의 시간대가 달라도 섞이지 않게. Workbench 에서는 9시간 이르게 보인다 |
+| Lombok | 이 엔티티는 **쓰지 않는다** | 무엇을 줄여 주는지 한 번은 직접 써 봐야 안다. F7 `team_results`(30칸)에서 도입 |
+
+**진행 상황**
+
+| | 할 일 | 누가 | 상태 · 통과 기준 |
+| --- | --- | --- | --- |
+| 0 | 브랜치 생성, `.env.example` 에 `NEWBEEZ_DDL_AUTO` 추가 | Claude | ✅ |
+| 1 | `application.yml` 에 `ddl-auto` 3줄 | 사용자 | ✅ 파일 비교로 확인 (실행은 아직 안 했다) |
+| **2** | **엔티티 `domain/ParticipantLog.java`** | 사용자 | ⬜ **← 다음.** `bootRun` 이 `Schema validation: missing table [participant_logs]` 로 **실패하면 통과** |
+| 3 | `.env` 에 `NEWBEEZ_DDL_AUTO=update` | 사용자 | ⬜ `bootRun` 성공 + Workbench 의 `SHOW CREATE TABLE participant_logs;` 가 아래 SQL 과 같음 |
+| 4a | 생성자·getter + Repository + 테스트 | 사용자 | ⬜ `build` 성공 + Workbench 에 행 1개, 시각이 9시간 이름 |
+| 4b | 테스트에 `@Transactional` | 사용자 | ⬜ `build` 를 다시 해도 행이 늘지 않음 |
+| 5 | HANDOFF 정리 · 커밋 · 병합 · 푸시 | Claude | ⬜ |
+
+**2단계에서 타이핑할 엔티티** — 이 모양에서 Hibernate 7.4.1 이 만드는 SQL 을 DB 없이 미리 뽑아 확인했다
+
+```java
+package com.newbeez.newbeezback.domain;
+
+import jakarta.persistence.*;
+import java.time.Instant;
+
+@Entity
+@Table(name = "participant_logs", indexes = {
+        @Index(name = "idx_cat_slug", columnList = "category_slug, result_slug"),
+        @Index(name = "idx_created", columnList = "created_at")
+})
+public class ParticipantLog {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, length = 32)
+    private String categorySlug;
+
+    @Column(nullable = false, length = 32)
+    private String resultSlug;
+
+    @Column(length = 32)
+    private String answerCode;
+
+    @Column(nullable = false, secondPrecision = 0)
+    private Instant createdAt;
+}
+```
+
+만들어지는 테이블 — 칸이 알파벳순으로 나오는 것은 정상이다
+
+```sql
+create table participant_logs (
+    id bigint not null auto_increment,
+    answer_code varchar(32),
+    category_slug varchar(32) not null,
+    created_at datetime(0) not null,
+    result_slug varchar(32) not null,
+    primary key (id)
+);
+create index idx_cat_slug on participant_logs (category_slug, result_slug);
+create index idx_created on participant_logs (created_at);
+```
+
+**알아 둘 것**
+
+- ⚠️ **`import` 두 줄은 보이는 대로 직접 친다.** IntelliJ 자동 가져오기에 맡기면 Spring Data 의 다른 `@Id` 가 잡힐 수 있다
+- ⚠️ **`update` 는 추가만 한다.** 필드 이름을 바꾸면 옛 컬럼이 남는다 → Workbench 에서 테이블을 지우고 다시 켠다
+- 4a 의 생성자는 `new ParticipantLog("football", "man-city", "032104213")` 형태로 받고, `createdAt` 은 그 안에서 `Instant.now()` 로 채운다 (시각을 DB 함수에 맡기지 않는다 — 규칙)
+- ❓ **아직 확인 못 한 것 둘** — MySQL 드라이버까지 거친 값이 실제로 UTC 인지(4a 에서 눈으로 확인) · `update` 가 인덱스까지 만드는지(3단계 `SHOW CREATE TABLE`)
+- 이 절은 인계용이라 길다. F6-2 가 끝나면 결정과 함정만 남기고 줄인다
 
 ### ⬜ F6-3 첫 엔드포인트를 `participants` 로 잡은 이유
 
 `GET /results`(팀 표시 정보)를 먼저 하고 싶어지지만 **채울 내용이 아직 없다** — 배지·감독·경기장 수집이 프론트 S3 슬라이스에 걸려 있다. `participants` 는 의존성이 0이고, 프론트에 **받을 자리가 이미 있다**(`_components/ParticipantCount.tsx` 가 `return null` 로 대기 중).
 
 ⚠️ **시작 전에 프론트 문서부터** — ARCHITECTURE §6 에는 경로만 있고 **요청·응답 본문 형태가 없다.** 프론트에도 아직 호출부가 없으니, 계약을 §6 에 먼저 적고 양쪽이 그걸 따른다.
+
+**답코드도 함께 받는다**(설계 §4.4·§5.2). 백엔드는 형식만 본다 — 형식이 틀렸을 때 **요청을 거절할지, 답코드만 비우고 기록은 남길지**를 여기서 정한다. 칸을 NULL 허용으로 둔 것은 뒤쪽을 가능하게 하려는 것이다.
 
 ### ⬜ F6-4 참여자 수 — `COUNT(*)` 를 매 요청 하지 말 것
 
@@ -115,7 +202,7 @@ API 동기화 영역(배치가 건드림) + 수동 큐레이션 영역(배치가
 
 | 테이블 | 카메라·등산 행을 넣을 수 있나 |
 | --- | --- |
-| `participant_logs` (id · category_slug · result_slug · created_at) | ✅ **완전 제네릭** — 그대로 됨 |
+| `participant_logs` (id · category_slug · result_slug · answer_code · created_at) | ✅ **완전 제네릭** — 그대로 됨 |
 | `team_results` (stadium · league_name · manager · legend …) | ❌ **축구 전용 컬럼 덩어리** |
 
 → 카테고리가 늘면 `team_results` 를 늘리는 게 아니라 **별도 구조로 간다** (형태는 4차에 결정 · 프론트 `docs/ARCHITECTURE.md` §5).
@@ -129,7 +216,9 @@ API 동기화 영역(배치가 건드림) + 수동 큐레이션 영역(배치가
 
 - **레포는 2개로 유지한다** (폴리레포). 두 레포가 공유하는 파일이 0개고, Java↔TS 는 타입도 공유할 수 없어 모노레포 이득이 없다
 - 프론트 파일을 볼 때는 **절대 경로로 읽는다** — 경로는 PC마다 다르다 → [CLAUDE.md](CLAUDE.md)
-- **읽기 위해 보는 것이지 고치지 않는다** — 계약의 원본이 프론트에 있고 백엔드는 참조하는 쪽이다
+- **프론트의 앱 코드는 고치지 않는다** — 계약의 원본이 프론트에 있고 백엔드는 참조하는 쪽이다
+- **설계 문서와 프론트 HANDOFF 는 사용자 승인을 받고 고친다** — 결정이 난 자리에서 원본에 바로 적어야 다른 창·다른 PC에 전달된다. 대화에만 남은 결정은 사라진다 (2026-10-06 답코드 건이 첫 사례)
+- ⏸ **모노레포로 합칠지 재검토 중** (2026-10-06 · 사용자 결정 대기). 9월의 판단은 코드만 봤고, **두 레포가 문서를 공유한다는 점**과 PC 두 대를 오가는 비용(낡은 클론 · PC별 경로 · 다른 레포의 문서 수정)을 계산에 넣지 않았다. Claude 의 제안은 **F6-2 를 끝낸 직후, F6-3 전에** 합치는 것 — 지금이 옮길 것이 가장 적고, F6-3 이 처음으로 양쪽에 걸치는 작업이기 때문이다. 합치면 Vercel 에 프론트 폴더 지정과 "백엔드만 바뀐 푸시는 배포 건너뛰기" 설정이 필요하다
 
 ---
 
