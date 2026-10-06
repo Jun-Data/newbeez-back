@@ -2,8 +2,11 @@ spring:
   application:
     name: newbeez-back
   config:
-    import : "optional:file:.env[.properties]"
+    import: "optional:file:.env[.properties]"
   datasource:
     url: ${NEWBEEZ_DB_URL}
     username: ${NEWBEEZ_DB_USERNAME}
     password: ${NEWBEEZ_DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: ${NEWBEEZ_DDL_AUTO:validate}
