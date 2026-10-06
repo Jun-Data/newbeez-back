@@ -20,7 +20,14 @@
 ## 📍 설계 원본은 프론트에 있다
 
 **시스템 설계(스키마·API·역할분담)의 원본 = `newbeez-front` 의 `docs/ARCHITECTURE.md`.**
-로컬 경로 **`C:\Users\이현준\Desktop\newbeez`** · GitHub `Jun-Data/newbeez-front`.
+GitHub `Jun-Data/newbeez-front` · 로컬 경로는 **PC마다 다르다.**
+
+| PC (Windows 사용자) | 프론트 | 백엔드 |
+| --- | --- | --- |
+| `이현준` | `C:\Users\이현준\Desktop\newbeez` | `C:\dev\newbeez-back` |
+| `jun98` (데스크톱) | `C:\newbeez-front` | `C:\newbeez-back` |
+
+⚠️ **프론트 로컬 클론이 낡았을 수 있다** — 읽기 전에 `git fetch` + `git status` 로 원격과 같은지 확인. 2026-10-06 에 `jun98` PC 의 클론이 63커밋 뒤처져 `docs/` 자체가 없었다.
 
 - 스키마 → ARCHITECTURE **§5** · API 명세 → **§6** · 운영/데이터 갱신 → **§7**
 - MVP 이후(댓글·허브·인증·호스팅) → `docs/FUTURE.md`
@@ -42,6 +49,8 @@
 | 실행 | `./gradlew bootRun` (또는 IntelliJ 실행) → http://localhost:8080 |
 | 빌드 | `./gradlew build` |
 
+⚠️ **둘 다 로컬 MySQL 과 `.env` 가 필요하다** (`build` 도 `contextLoads` 테스트가 DB에 붙는다). 처음 받은 PC에서는 `.env.example` 을 `.env` 로 복사해 값을 채운다 — 절차는 [HANDOFF.md](HANDOFF.md).
+
 ## 구조 — 4계층
 
 `Controller(REST) → Service(로직) → Repository(JPA) → MySQL`
@@ -61,6 +70,8 @@
 ## 규칙
 
 - **DB 접속 정보는 환경변수로만.** 접속 URL·계정·비밀번호를 커밋되는 파일에 쓰지 않는다 (public 레포 · 배포처마다 값이 다름)
+  - `application.yml` 에는 `${NEWBEEZ_DB_URL}` 같은 **빈칸만** 둔다. 로컬 값은 프로젝트 루트 `.env`(git 무시), 배포에서는 같은 이름의 환경변수
+  - 🚫 **프로필(`application-<이름>.yml`)에 기대지 말 것** — OS 환경변수가 설정 파일을 이기므로, PC에 `SPRING_PROFILES_ACTIVE` 가 걸려 있으면 조용히 무시된다 (`jun98` PC 에 실제로 `loc` 이 걸려 있다)
 - **트리거·프로시저·벤더 함수 금지** — 자바로 못 옮기는 로직이 DB 안에 생기면 호스팅을 못 옮긴다
 - `ddl-auto` 자동 생성은 **학습 단계만.** 배포 전 Flyway 로 전환
 - 사용자는 **프론트 입문자**이고 백엔드도 함께 학습 중 — 개념부터 설명(explain-first), 한 번에 완성본을 던지지 말고 작은 단계로 쪼갤 것
