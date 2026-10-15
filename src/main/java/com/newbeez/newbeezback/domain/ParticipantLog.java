@@ -35,4 +35,25 @@ public class ParticipantLog {
         this.answerCode = answerCode;
         this.createdAt = Instant.now();
     }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getCategorySlug() {
+        return categorySlug;
+    }
+
+    public String getResultSlug() {
+        return resultSlug;
+    }
+
+    public String getAnswerCode() {
+        return answerCode;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
 }
