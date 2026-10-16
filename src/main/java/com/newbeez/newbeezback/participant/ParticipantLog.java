@@ -1,4 +1,4 @@
-package com.newbeez.newbeezback.domain;
+package com.newbeez.newbeezback.participant;
 
 import jakarta.persistence.*;
 
