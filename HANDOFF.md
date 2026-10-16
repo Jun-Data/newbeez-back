@@ -7,7 +7,7 @@
 > - 작업 규칙(역할·커밋·스택 주의점) → [CLAUDE.md](CLAUDE.md)
 > - 프론트 진행 상황 → 프론트 레포 `HANDOFF.md`
 
-**마지막 업데이트: 2026-10-06** — F6-1 완료. **F6-2 진행 중 — 1단계까지 끝났고 다음은 2단계(엔티티 타이핑)**
+**마지막 업데이트: 2026-10-16** — F6-1 완료. **F6-2 진행 중 — 4a ③ Repository 까지 끝났고 다음은 4a ④ 테스트**
 🔀 **작업은 브랜치 `feat/participant-log` 에 있다** (`main` 에는 아직 없음 · origin 에 푸시됨)
 
 ### ▶ 다른 PC에서 이어갈 때
@@ -16,8 +16,12 @@
 
 1. **백엔드** — `git pull` 후 `git switch feat/participant-log`
 2. **프론트** — `git pull` (설계 문서가 `0a1f68c` 로 갱신됐다 — 답코드 칸 추가)
-3. **그 PC 의 준비** — 아래 F6-1 표에서 ⬜ 인 것부터(계정 · `.env`). `bootRun` 이 404 까지 가는지 먼저 확인한다
-4. **F6-2 의 2단계부터** 이어간다 (아래 "F6-2 진행 중")
+3. **그 PC 의 준비** — 아래 F6-1 표에서 ⬜ 인 것부터(계정 · `.env`, `NEWBEEZ_DDL_AUTO=update` 포함). `bootRun` 이 404 까지 가면 그 PC 의 DB 에도 `participant_logs` 가 생긴 것이다 — Workbench `SHOW CREATE TABLE participant_logs;` 가 아래 SQL 과 같은지 본다
+4. **IntelliJ 를 쓰면 두 가지를 먼저 본다** — `.idea` 는 git 이 무시해서 PC마다 설정이 다르다
+   - **Project SDK 가 21 인가** (File → Project Structure → Project → SDK). `jun98` PC 에는 실험판 `valhalla-ea-23` 이 잡혀 있었다 → 2026-10-16 `ms-21` (21.0.11) 로 바꿈
+   - **실행은 상단 드롭다운의 `NewbeezBackApplication`(Spring Boot) ▶** — Gradle 실행 설정은 task 칸이 비어 있으면 `> Task :help` 만 돌고 앱이 안 켜진다
+5. **F6-2 의 4a ④ 테스트부터** 이어간다 (아래 "F6-2 진행 중")
+6. ⚠️ **Claude 의 메모리는 PC마다 따로다** — `jun98` PC 대화의 결론 중 다른 PC가 알아야 할 것은 이 파일에 옮겨 두었다 (F7 행의 이미지 권리 조사 · F6-2 의 패키지 구조 결정)
 
 ---
 
@@ -52,7 +56,7 @@
 | F6-3 | `POST /api/v1/participants` — 4계층 첫 관통 | ⬜ |
 | F6-4 | `GET /api/v1/participants/count` + **1분 캐시** | ⬜ |
 | F6-5 | **CORS** — 브라우저가 직접 부르는 두 엔드포인트만 | ⬜ |
-| F7 | `team_results` + `GET /results` | ⬜ 프론트 S3(배지·팀 데이터 수집) 이후 |
+| F7 | `team_results` + `GET /results` | ⬜ 프론트 S3(배지·팀 데이터 수집) 이후. ⚠️ 2026-10-14 이미지 권리 조사 — TheSportsDB 등 API 의 이미지(배지·구장·선수)는 **사용 근거가 못 된다**(약관: 유료도 제3자 이미지 권리 없음). 프론트 S3("배지 15장") · ARCHITECTURE §7.3 · §5.1 수정안은 **사용자 결정 대기** — 결정 전엔 S3 의 이미지 수집 절차를 그대로 따르지 말 것 |
 
 이후: 배포처 확보 → Flyway 전환 → 댓글
 
@@ -68,7 +72,7 @@
 | DB `newbeez` | ✅ | ✅ (2026-09-04 기록) |
 | 앱 전용 계정 `newbeez` | ✅ | ⬜ |
 | `.env` | ✅ | ⬜ |
-| `.env` 의 `NEWBEEZ_DDL_AUTO=update` | ⬜ F6-2 3단계에서 | ⬜ F6-2 3단계에서 |
+| `.env` 의 `NEWBEEZ_DDL_AUTO=update` | ✅ (2026-10-14) | ⬜ |
 
 **⬜ 인 PC에서 할 일**
 
@@ -79,7 +83,7 @@
    GRANT ALL PRIVILEGES ON newbeez.* TO 'newbeez'@'localhost';
    ```
 2. `.env.example` 을 같은 폴더에 `.env` 로 복사하고 DB 값 3개를 채운다
-   - ⚠️ F6-2 를 이어가는 중이면 `NEWBEEZ_DDL_AUTO=update` 줄은 **앞에 `#` 을 붙여 꺼 둔다.** 3단계에서 `#` 을 떼어 켠다 — 2단계의 "일부러 실패"를 보려면 꺼져 있어야 한다
+   - `NEWBEEZ_DDL_AUTO=update` 줄은 **켜 둔다** — F6-2 의 "일부러 실패"(2단계) 확인은 2026-10-14 에 끝났고, 켜져 있어야 엔티티대로 테이블이 생긴다
 3. `./gradlew bootRun` → `Started NewbeezBackApplication` 이 찍히고 http://localhost:8080 이 **404** 면 성공 (컨트롤러가 아직 없어 404 가 정상)
 
 **겪은 함정**
@@ -94,10 +98,11 @@
 
 **설계 원본은 이미 고쳤다** — 프론트 `docs/ARCHITECTURE.md` §5.2 (프론트 커밋 `0a1f68c`).
 
-**2026-10-06 에 정한 것**
+**정한 것** — 2026-10-06 (패키지만 2026-10-16)
 
 | | 결정 | 이유 |
 | --- | --- | --- |
+| 패키지 | **기능별** — `participant/` 에 엔티티 · Repository (`domain/` · `repository/` 같은 계층별 폴더 안 씀) | Spring Boot 문서 "Structuring Your Code" 예시가 기능별이다 · 두 테이블이 외래키 없이 독립이라 기능 단위로 깔끔히 갈린다 · 패키지는 DB 와 무관(테이블 이름은 `@Table` 이 정함)해서 나중에 바꿔도 된다 |
 | 칸 수 | **5칸** — `answer_code VARCHAR(32)` NULL 허용을 추가 | 분석용. 기록하지 않은 답은 되살릴 수 없다. 백엔드는 해석하지 않고 보관만 한다 |
 | `ddl-auto` | `${NEWBEEZ_DDL_AUTO:validate}` — 기본은 `validate`, 로컬 `.env` 에서만 `update` | 값을 안 준 환경(배포)에서 테이블이 멋대로 바뀌지 않게. **배포 전 Flyway 전환**은 확정 사항 |
 | `created_at` | 자바 `Instant` → **UTC 로 저장** | PC(KST)와 배포 서버의 시간대가 달라도 섞이지 않게. Workbench 에서는 9시간 이르게 보인다 |
@@ -109,44 +114,15 @@
 | --- | --- | --- | --- |
 | 0 | 브랜치 생성, `.env.example` 에 `NEWBEEZ_DDL_AUTO` 추가 | Claude | ✅ |
 | 1 | `application.yml` 에 `ddl-auto` 3줄 | 사용자 | ✅ 파일 비교로 확인 (실행은 아직 안 했다) |
-| **2** | **엔티티 `domain/ParticipantLog.java`** | 사용자 | ⬜ **← 다음.** `bootRun` 이 `Schema validation: missing table [participant_logs]` 로 **실패하면 통과** |
-| 3 | `.env` 에 `NEWBEEZ_DDL_AUTO=update` | 사용자 | ⬜ `bootRun` 성공 + Workbench 의 `SHOW CREATE TABLE participant_logs;` 가 아래 SQL 과 같음 |
-| 4a | 생성자·getter + Repository + 테스트 | 사용자 | ⬜ `build` 성공 + Workbench 에 행 1개, 시각이 9시간 이름 |
+| 2 | 엔티티 `ParticipantLog.java` | 사용자 | ✅ 2026-10-14 — `missing table [participant_logs]` 로 실패 확인 |
+| 3 | `.env` 에 `NEWBEEZ_DDL_AUTO=update` | 사용자 | ✅ 2026-10-14 — `bootRun` 성공 + `SHOW CREATE TABLE` 이 아래 SQL 과 일치(인덱스 2개 포함) |
+| **4a** | ① 생성자 ✅ (2026-10-14) · ② getter ✅ · ③ Repository ✅ (2026-10-16 — 기능별 패키지로 이동 포함) · **④ 테스트 ← 다음** | 사용자 | 🟡 `build` 성공 + Workbench 에 행 1개, 시각이 9시간 이름 |
 | 4b | 테스트에 `@Transactional` | 사용자 | ⬜ `build` 를 다시 해도 행이 늘지 않음 |
 | 5 | HANDOFF 정리 · 커밋 · 병합 · 푸시 | Claude | ⬜ |
 
-**2단계에서 타이핑할 엔티티** — 이 모양에서 Hibernate 7.4.1 이 만드는 SQL 을 DB 없이 미리 뽑아 확인했다
-
-```java
-package com.newbeez.newbeezback.domain;
-
-import jakarta.persistence.*;
-import java.time.Instant;
-
-@Entity
-@Table(name = "participant_logs", indexes = {
-        @Index(name = "idx_cat_slug", columnList = "category_slug, result_slug"),
-        @Index(name = "idx_created", columnList = "created_at")
-})
-public class ParticipantLog {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(nullable = false, length = 32)
-    private String categorySlug;
-
-    @Column(nullable = false, length = 32)
-    private String resultSlug;
-
-    @Column(length = 32)
-    private String answerCode;
-
-    @Column(nullable = false, secondPrecision = 0)
-    private Instant createdAt;
-}
-```
+**코드는 `participant/` 폴더가 원본이다.** 여기에 코드 사본을 두지 않는다.
+- [`ParticipantLog.java`](src/main/java/com/newbeez/newbeezback/participant/ParticipantLog.java) — 엔티티 · 5칸 + 생성자 2개 + getter 5개
+- [`ParticipantLogRepository.java`](src/main/java/com/newbeez/newbeezback/participant/ParticipantLogRepository.java) — `JpaRepository<ParticipantLog, Long>` 를 상속만 하는 빈 interface. 구현 객체는 Spring Data JPA 가 실행 시 만든다
 
 만들어지는 테이블 — 칸이 알파벳순으로 나오는 것은 정상이다
 
@@ -167,8 +143,13 @@ create index idx_created on participant_logs (created_at);
 
 - ⚠️ **`import` 두 줄은 보이는 대로 직접 친다.** IntelliJ 자동 가져오기에 맡기면 Spring Data 의 다른 `@Id` 가 잡힐 수 있다
 - ⚠️ **`update` 는 추가만 한다.** 필드 이름을 바꾸면 옛 컬럼이 남는다 → Workbench 에서 테이블을 지우고 다시 켠다
-- 4a 의 생성자는 `new ParticipantLog("football", "man-city", "032104213")` 형태로 받고, `createdAt` 은 그 안에서 `Instant.now()` 로 채운다 (시각을 DB 함수에 맡기지 않는다 — 규칙)
-- ❓ **아직 확인 못 한 것 둘** — MySQL 드라이버까지 거친 값이 실제로 UTC 인지(4a 에서 눈으로 확인) · `update` 가 인덱스까지 만드는지(3단계 `SHOW CREATE TABLE`)
+- 생성자는 둘이다 (4a ① ✅). **`public` 3개짜리** = 새 기록용 — `id` 는 안 받고(MySQL 이 매김) `createdAt` 은 안에서 `Instant.now()` (시각을 DB 함수에 맡기지 않는다 — 규칙). **`protected` 빈 생성자** = Hibernate 가 행을 객체로 복원할 때 쓴다(JPA 규칙 · 프록시가 자식 클래스라 `private` 불가)
+- getter 는 5칸 모두 (4a ② ✅) · **setter 는 만들지 않는다** — 참여 기록은 쌓기만 하고 고치지 않는다(append-only)
+- 4a ③ 의 확인법 — 부팅 로그 `Found 1 JPA repository interface` (엔티티만 있을 땐 `0`). 이 줄은 interface 를 **찾았다**는 뜻일 뿐, `save` 가 실제로 되는지는 ④ 에서 본다
+- 4a ④ 에서 볼 것 — `save` 전후의 `getId()` (`null` → 번호) · Workbench `SELECT *` 에 행 1개. `save` 는 자기 트랜잭션으로 커밋하므로 **테스트가 끝나도 행이 남는다** → 4b 에서 `@Transactional` 로 되돌린다
+- ⚠️ **Hibernate 가 실행한 SQL 은 로그에 안 나온다** — `application.yml` 에 `show-sql` 이 없다. `create table`·`alter table` 이 돌았는지는 로그가 아니라 Workbench 로 본다
+- ❓ **아직 확인 못 한 것** — MySQL 드라이버까지 거친 값이 실제로 UTC 인지(4a 에서 눈으로 확인)
+- ✅ `update` 는 인덱스까지 만든다 (2026-10-14 `SHOW CREATE TABLE` 에 `KEY` 2줄). MySQL 은 `datetime(0)` 을 `datetime` 으로 표시한다 — `(6)` 이 보이면 `secondPrecision` 이 안 먹은 것
 - 이 절은 인계용이라 길다. F6-2 가 끝나면 결정과 함정만 남기고 줄인다
 
 ### ⬜ F6-3 첫 엔드포인트를 `participants` 로 잡은 이유
