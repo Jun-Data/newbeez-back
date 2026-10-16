@@ -46,7 +46,7 @@ GitHub `Jun-Data/newbeez-front` · 로컬 경로는 **PC마다 다르다.**
 
 | 목적 | 명령 |
 | --- | --- |
-| 실행 | `./gradlew bootRun` (또는 IntelliJ 실행) → http://localhost:8080 |
+| 실행 | `./gradlew bootRun` (또는 IntelliJ 의 Spring Boot 실행 설정 `NewbeezBackApplication`) → http://localhost:8080 |
 | 빌드 | `./gradlew build` |
 
 ⚠️ **둘 다 로컬 MySQL 과 `.env` 가 필요하다** (`build` 도 `contextLoads` 테스트가 DB에 붙는다). 처음 받은 PC에서는 `.env.example` 을 `.env` 로 복사해 값을 채운다 — 절차는 [HANDOFF.md](HANDOFF.md).
@@ -55,7 +55,9 @@ GitHub `Jun-Data/newbeez-front` · 로컬 경로는 **PC마다 다르다.**
 
 `Controller(REST) → Service(로직) → Repository(JPA) → MySQL`
 
-패키지 루트 `com.newbeez.newbeezback` · 엔티티는 `domain/`
+패키지 루트 `com.newbeez.newbeezback` · **기능별 패키지** — 기능(테이블) 하나에 하위 패키지 하나를 두고 계층 파일을 그 안에 모은다. 예: `participant/` 에 `ParticipantLog` · `ParticipantLogRepository` (이후 `…Service` · `…Controller`). 계층은 파일 이름 접미사로 구분한다
+
+메인 클래스 `NewbeezBackApplication` 은 루트에 둔다 — Spring 은 그 패키지와 하위만 훑는다
 
 ## MVP 테이블은 2개뿐
 
