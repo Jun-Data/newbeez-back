@@ -7,7 +7,7 @@
 > - 작업 규칙(역할·커밋·스택 주의점) → [CLAUDE.md](CLAUDE.md)
 > - 프론트 진행 상황 → 프론트 레포 `HANDOFF.md`
 
-**마지막 업데이트: 2026-10-16** — F6-1 완료. **F6-2 진행 중 — 4a ③ Repository 까지 끝났고 다음은 4a ④ 테스트**
+**마지막 업데이트: 2026-10-20** — 코드 변경 없음. **F6-2 진행 중 — 다음은 4a ④ 테스트.** 2026-10-20 에 **F7 의 설계가 확정**됐다(이미지 없음 · `team_results` 전부 수동 시드 · Flyway 를 F7 직전으로) → 아래 F7 절 · 프론트 ARCHITECTURE §5.1·§6·§7 · `docs/LEGAL.md`
 🔀 **작업은 브랜치 `feat/participant-log` 에 있다** (`main` 에는 아직 없음 · origin 에 푸시됨)
 
 ### ▶ 다른 PC에서 이어갈 때
@@ -21,7 +21,7 @@
    - **Project SDK 가 21 인가** (File → Project Structure → Project → SDK). `jun98` PC 에는 실험판 `valhalla-ea-23` 이 잡혀 있었다 → 2026-10-16 `ms-21` (21.0.11) 로 바꿈
    - **실행은 상단 드롭다운의 `NewbeezBackApplication`(Spring Boot) ▶** — Gradle 실행 설정은 task 칸이 비어 있으면 `> Task :help` 만 돌고 앱이 안 켜진다
 5. **F6-2 의 4a ④ 테스트부터** 이어간다 (아래 "F6-2 진행 중")
-6. ⚠️ **Claude 의 메모리는 PC마다 따로다** — `jun98` PC 대화의 결론 중 다른 PC가 알아야 할 것은 이 파일에 옮겨 두었다 (F7 행의 이미지 권리 조사 · F6-2 의 패키지 구조 결정)
+6. ⚠️ **Claude 의 메모리는 PC마다 따로다** — 다른 PC가 알아야 할 결론은 이 파일과 프론트 문서에 옮겨 둔다 (F7 설계 확정 2026-10-20 · F6-2 의 패키지 구조 결정). 학습 진행 방식은 [CLAUDE.md](CLAUDE.md) 에 적었다
 
 ---
 
@@ -56,9 +56,10 @@
 | F6-3 | `POST /api/v1/participants` — 4계층 첫 관통 | ⬜ |
 | F6-4 | `GET /api/v1/participants/count` + **1분 캐시** | ⬜ |
 | F6-5 | **CORS** — 브라우저가 직접 부르는 두 엔드포인트만 | ⬜ |
-| F7 | `team_results` + `GET /results` | ⬜ 프론트 S3(배지·팀 데이터 수집) 이후. ⚠️ 2026-10-14 이미지 권리 조사 — TheSportsDB 등 API 의 이미지(배지·구장·선수)는 **사용 근거가 못 된다**(약관: 유료도 제3자 이미지 권리 없음). 프론트 S3("배지 15장") · ARCHITECTURE §7.3 · §5.1 수정안은 **사용자 결정 대기** — 결정 전엔 S3 의 이미지 수집 절차를 그대로 따르지 말 것 |
+| **F6.5** | **Flyway 전환** — `V1__participant_logs.sql` · `ddl-auto` 는 `validate` 고정 | ⬜ F7 직전 (2026-10-20 당김) |
+| F7 | `team_results`(읽기 전용 · Flyway `V2__` + `R__` 시드 15행) + `GET /results` | ⬜ **설계 확정 2026-10-20** — 프론트 S3 선행조건 없음(S3 폐기). 상세는 아래 "F7 설계 확정" |
 
-이후: 배포처 확보 → Flyway 전환 → 댓글
+이후: 배포처 확보(⚠️ Oracle Always Free 는 **7일 유휴 시 인스턴스 회수** — 프론트 FUTURE §4) → 댓글
 
 ### ✅ F6-1 DB 설정 — 2026-10-06
 
@@ -167,15 +168,25 @@ create index idx_created on participant_logs (created_at);
 
 ⚠️ **starter 만으로는 만료가 안 된다** — 기본 캐시(`ConcurrentMapCacheManager`)에는 TTL 기능이 없다(2026-10-06 jar 확인). 1분 만료를 쓰려면 Caffeine 같은 구현체가 함께 필요하다.
 
+### ⬜ F6.5 Flyway + F7 `team_results` — 설계 확정 (2026-10-20)
+
+**스키마·칸 설명·검증 규칙의 원본은 프론트 ARCHITECTURE §5.1** (여기에 복사하지 않는다). 백엔드가 알아야 할 것만:
+
+- **읽기 전용 테이블.** 엔티티는 setter 없음 + `@org.hibernate.annotations.Immutable`(ORM 애노테이션 — "벤더 함수 금지" 규칙과 무관) · Repository 는 조회만. 배치·동기화 코드 없음 — 옛 "하이브리드(API 동기화 영역)" 설계는 폐기됐다
+- **데이터는 Flyway 시드 파일이 진실** — `src/main/resources/db/migration/`: DDL 은 `V1__participant_logs.sql`·`V2__team_results.sql`, **15행은 `R__team_results_seed.sql`**(`DELETE … WHERE category_slug='football'; INSERT …`). DDL 과 DML 을 한 파일에 섞지 않는다(MySQL DDL 암묵적 커밋). 각 행 주석에 출처 URL·확인일. 벤더 구문(`ON DUPLICATE KEY UPDATE`) ✗
+- **Flyway 도입과 동시에 `.env` 의 `NEWBEEZ_DDL_AUTO=update` 를 지운다** — Hibernate 가 Flyway 밖에서 스키마를 바꾸면 드리프트. `validate` 는 유지하되 엔티티 `@Column(length…)`·타입을 DDL 과 맞춰야 기동된다(`validate` 는 VARCHAR 길이는 검사하지 않음). 의존성 `spring-boot-starter-flyway` + `org.flywaydb:flyway-mysql`(Spring Boot 4.1 → Flyway 12.4). MySQL 8.4 는 문서 목록에 없지만 Redgate 가 지원 확인(2026-08) — 배포 DB 로 1회 검증
+- **`kit_post_url` 정규화·검증은 Java** — 쿼리스트링 제거 → `https://www.instagram.com/p/{code}/` → `@Pattern`(`spring-boot-starter-validation` 추가). 사진 게시물 여부는 등록 체크리스트
+- **`GET /results` 응답 형태**는 ARCHITECTURE §6 에 적혀 있다 — `kit: { postUrl, seasonLabel } | null`. 프론트는 실패 시 던지므로(빌드 fail-fast) **백엔드가 먼저 떠 있어야 프론트 S8 이 배포된다**
+- Lombok 은 여기서 도입(기존 결정 유지)
+- 시즌 교체·삭제 요청 런북은 ARCHITECTURE §7.1 — 백엔드 쪽 할 일은 "시드 파일 수정 → 배포" 뿐
+
 ---
 
 ## 📌 함정 모음
 
-### 🚨 `team_results` 는 한 테이블에 두 성격이 섞여 있다
+### ✅ `team_results` 는 읽기 전용 시드 테이블이다 (2026-10-20)
 
-API 동기화 영역(배치가 건드림) + 수동 큐레이션 영역(배치가 절대 안 건드림)이 한 테이블에 있다.
-
-**동기화 Service 는 기존 엔티티를 로드해 API 영역 setter 만 호출할 것.** 새 엔티티를 만들어 `save()` 하면 **수동 큐레이션 컬럼이 전부 날아간다.** 미러링 패턴의 1번 사고다. (ARCHITECTURE §5.1)
+옛 설계의 "API 동기화 영역 + 수동 큐레이션 영역 하이브리드" 와 그에 따른 `save()` 사고 경고는 **폐기**됐다. 런타임에 이 테이블을 쓰는 코드는 0개여야 한다 — 값을 바꾸려면 `R__team_results_seed.sql` 을 고쳐 배포한다. 운영 DB 를 직접 `UPDATE` 하면 다음 시드 변경 때 덮어써진다(ARCHITECTURE §7.1 런북 2단계).
 
 ### ⚠️ 두 테이블의 카테고리 확장 준비도가 다르다
 
@@ -208,3 +219,4 @@ API 동기화 영역(배치가 건드림) + 수동 큐레이션 영역(배치가
 - **로컬 DB**: MySQL 8.0.x · `MySQL80` 서비스 · DB `newbeez` — **PC마다 따로 있고 내용이 오가지 않는다**(위 F6-1 표). ⚠️ 8.0 은 2026-04-30 에 지원이 끝난 버전이다. 로컬 학습용으론 문제없지만 **배포 DB는 8.4 이상**으로 고른다
 - **배포처**: 1순위 Oracle Cloud Always Free 서울(A1 + MySQL HeatWave 50GB). **결정 보류** — A1 확보가 복불복이라 미리 시도 권장. 근거는 프론트 `docs/FUTURE.md` §4
 - **락인 방어(지금부터 적용)**: 컨테이너화 · DB 접속은 환경변수로만 · Flyway · 트리거/프로시저 금지
+- **Instagram 임베드 테스트 페이지** `C:\dev\embed-test\index.html` (`이현준` PC · git 밖) — 327px 본문에 게시물/캡션/계정 카드 3종을 띄우고 렌더 시간·크기를 재는 정적 HTML. `python -m http.server 8000 --bind 127.0.0.1 --directory C:\dev\embed-test` 로 열람. 2026-10-20 PC 크롬 확인 완료, 실기기(iOS Safari·카톡 인앱)는 미확인(프론트 ARCHITECTURE §9 #6)
