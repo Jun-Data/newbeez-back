@@ -7,20 +7,20 @@
 > - 작업 규칙(역할·커밋·스택 주의점) → [CLAUDE.md](CLAUDE.md)
 > - 프론트 진행 상황 → 프론트 레포 `HANDOFF.md`
 
-**마지막 업데이트: 2026-10-20** — 코드 변경 없음. **F6-2 진행 중 — 다음은 4a ④ 테스트.** 2026-10-20 에 **F7 의 설계가 확정**됐다(이미지 없음 · `team_results` 전부 수동 시드 · Flyway 를 F7 직전으로) → 아래 F7 절 · 프론트 ARCHITECTURE §5.1·§6·§7 · `docs/LEGAL.md`
-🔀 **작업은 브랜치 `feat/participant-log` 에 있다** (`main` 에는 아직 없음 · origin 에 푸시됨)
+**마지막 업데이트: 2026-10-26** — **F6-2 4a ④ 테스트 완료**(`14ff6ff` · `save` 가 id 를 부여하고 UTC 로 저장함을 측정으로 확인). **다음은 4b — 테스트에 `@Transactional`.** 2026-10-20 에 **F7 의 설계가 확정**됐다(이미지 없음 · `team_results` 전부 수동 시드 · Flyway 를 F7 직전으로) → 아래 F7 절 · 프론트 ARCHITECTURE §5.1·§6·§7 · `docs/LEGAL.md`
+🔀 **작업은 브랜치 `feat/participant-log` 에 있다** — `main` 에는 4a ③ 까지 병합됐다(PR #1 · 2026-10-16). 그 뒤의 문서 커밋 2개(10-20)와 4a ④ 테스트(`14ff6ff`)는 브랜치에만 있다 · origin 에 푸시됨
 
 ### ▶ 다른 PC에서 이어갈 때
 
 대화 기록과 `.env`·DB 는 PC를 넘어가지 않는다. 넘어가는 것은 git 에 올린 것뿐이다.
 
 1. **백엔드** — `git pull` 후 `git switch feat/participant-log`
-2. **프론트** — `git pull` (설계 문서가 `0a1f68c` 로 갱신됐다 — 답코드 칸 추가)
+2. **프론트** — `git pull` (설계 문서가 `72f7197` 로 갱신됐다 — 이미지 없음 · Instagram 임베드 · `docs/LEGAL.md` 신설)
 3. **그 PC 의 준비** — 아래 F6-1 표에서 ⬜ 인 것부터(계정 · `.env`, `NEWBEEZ_DDL_AUTO=update` 포함). `bootRun` 이 404 까지 가면 그 PC 의 DB 에도 `participant_logs` 가 생긴 것이다 — Workbench `SHOW CREATE TABLE participant_logs;` 가 아래 SQL 과 같은지 본다
 4. **IntelliJ 를 쓰면 두 가지를 먼저 본다** — `.idea` 는 git 이 무시해서 PC마다 설정이 다르다
    - **Project SDK 가 21 인가** (File → Project Structure → Project → SDK). `jun98` PC 에는 실험판 `valhalla-ea-23` 이 잡혀 있었다 → 2026-10-16 `ms-21` (21.0.11) 로 바꿈
    - **실행은 상단 드롭다운의 `NewbeezBackApplication`(Spring Boot) ▶** — Gradle 실행 설정은 task 칸이 비어 있으면 `> Task :help` 만 돌고 앱이 안 켜진다
-5. **F6-2 의 4a ④ 테스트부터** 이어간다 (아래 "F6-2 진행 중")
+5. **F6-2 의 4b 부터** 이어간다 (아래 "F6-2 진행 중") — 테스트 파일은 이미 있고, `@Transactional` 한 줄을 붙이는 단계
 6. ⚠️ **Claude 의 메모리는 PC마다 따로다** — 다른 PC가 알아야 할 결론은 이 파일과 프론트 문서에 옮겨 둔다 (F7 설계 확정 2026-10-20 · F6-2 의 패키지 구조 결정). 학습 진행 방식은 [CLAUDE.md](CLAUDE.md) 에 적었다
 
 ---
@@ -117,13 +117,14 @@
 | 1 | `application.yml` 에 `ddl-auto` 3줄 | 사용자 | ✅ 파일 비교로 확인 (실행은 아직 안 했다) |
 | 2 | 엔티티 `ParticipantLog.java` | 사용자 | ✅ 2026-10-14 — `missing table [participant_logs]` 로 실패 확인 |
 | 3 | `.env` 에 `NEWBEEZ_DDL_AUTO=update` | 사용자 | ✅ 2026-10-14 — `bootRun` 성공 + `SHOW CREATE TABLE` 이 아래 SQL 과 일치(인덱스 2개 포함) |
-| **4a** | ① 생성자 ✅ (2026-10-14) · ② getter ✅ · ③ Repository ✅ (2026-10-16 — 기능별 패키지로 이동 포함) · **④ 테스트 ← 다음** | 사용자 | 🟡 `build` 성공 + Workbench 에 행 1개, 시각이 9시간 이름 |
-| 4b | 테스트에 `@Transactional` | 사용자 | ⬜ `build` 를 다시 해도 행이 늘지 않음 |
+| 4a | ① 생성자 ✅ (2026-10-14) · ② getter ✅ · ③ Repository ✅ (2026-10-16 — 기능별 패키지로 이동 포함) · ④ 테스트 ✅ (2026-10-26 · `14ff6ff`) | 사용자 | ✅ 테스트 통과 + Workbench 에 행 1개(id=1), 시각이 9시간 이름 |
+| **4b** | 테스트에 `@Transactional` **← 다음** | 사용자 | ⬜ 실행 전후로 행 수가 같음 (출력되는 id 는 계속 올라간다 — auto_increment 는 롤백되지 않는다) |
 | 5 | HANDOFF 정리 · 커밋 · 병합 · 푸시 | Claude | ⬜ |
 
 **코드는 `participant/` 폴더가 원본이다.** 여기에 코드 사본을 두지 않는다.
 - [`ParticipantLog.java`](src/main/java/com/newbeez/newbeezback/participant/ParticipantLog.java) — 엔티티 · 5칸 + 생성자 2개 + getter 5개
 - [`ParticipantLogRepository.java`](src/main/java/com/newbeez/newbeezback/participant/ParticipantLogRepository.java) — `JpaRepository<ParticipantLog, Long>` 를 상속만 하는 빈 interface. 구현 객체는 Spring Data JPA 가 실행 시 만든다
+- [`ParticipantLogRepositoryTest.java`](src/test/java/com/newbeez/newbeezback/participant/ParticipantLogRepositoryTest.java) — `@SpringBootTest` 로 앱을 띄워 로컬 MySQL 에 실제로 저장 · `save` 전후 `getId()` (null → 번호) 검증 + `createdAt` 출력
 
 만들어지는 테이블 — 칸이 알파벳순으로 나오는 것은 정상이다
 
@@ -147,9 +148,11 @@ create index idx_created on participant_logs (created_at);
 - 생성자는 둘이다 (4a ① ✅). **`public` 3개짜리** = 새 기록용 — `id` 는 안 받고(MySQL 이 매김) `createdAt` 은 안에서 `Instant.now()` (시각을 DB 함수에 맡기지 않는다 — 규칙). **`protected` 빈 생성자** = Hibernate 가 행을 객체로 복원할 때 쓴다(JPA 규칙 · 프록시가 자식 클래스라 `private` 불가)
 - getter 는 5칸 모두 (4a ② ✅) · **setter 는 만들지 않는다** — 참여 기록은 쌓기만 하고 고치지 않는다(append-only)
 - 4a ③ 의 확인법 — 부팅 로그 `Found 1 JPA repository interface` (엔티티만 있을 땐 `0`). 이 줄은 interface 를 **찾았다**는 뜻일 뿐, `save` 가 실제로 되는지는 ④ 에서 본다
-- 4a ④ 에서 볼 것 — `save` 전후의 `getId()` (`null` → 번호) · Workbench `SELECT *` 에 행 1개. `save` 는 자기 트랜잭션으로 커밋하므로 **테스트가 끝나도 행이 남는다** → 4b 에서 `@Transactional` 로 되돌린다
+- ✅ 4a ④ 결과 (2026-10-26) — `getId()` `null` → `1` · Workbench `SELECT *` 에 행 1개. `save` 는 자기 트랜잭션으로 커밋하므로 **테스트가 끝나도 행이 남는다** → 4b 에서 `@Transactional` 로 되돌린다. `jun98` PC DB 에는 4b 이전에 넣은 테스트 행이 남아 있으므로 **4b 는 "실행 전후 행 수가 같은가"로 판정**한다
+- 테스트만 골라 실행: `./gradlew test --tests "com.newbeez.newbeezback.participant.ParticipantLogRepositoryTest"`. **통과한 테스트는 콘솔에 아무것도 안 찍는다** — `println` 출력과 Spring 로그는 `build/test-results/test/*.xml` 또는 `build/reports/tests/test/index.html` 에 있다
+- ⚠️ **`@SpringBootTest` 없이 `@Autowired` 를 쓰면 IntelliJ 가 빨간 밑줄**(`Autowired members must be defined in valid Spring bean`)을 띄운다 — 컴파일 오류가 아니라 Spring 검사 경고다. 실행하면 필드가 `null` 로 남아 `expected: not <null>` 로 실패한다(2026-10-26 일부러 확인). `@SpringBootTest` 를 붙이면 밑줄이 사라진다
 - ⚠️ **Hibernate 가 실행한 SQL 은 로그에 안 나온다** — `application.yml` 에 `show-sql` 이 없다. `create table`·`alter table` 이 돌았는지는 로그가 아니라 Workbench 로 본다
-- ❓ **아직 확인 못 한 것** — MySQL 드라이버까지 거친 값이 실제로 UTC 인지(4a 에서 눈으로 확인)
+- ✅ **UTC 저장 확인 (2026-10-26)** — Java `Instant` 출력 `2026-10-26T07:57:29.28Z` = DB `created_at` `07:57:29` = 로컬 KST 16:57:29 − 9시간. 드라이버를 거쳐도 변환되지 않는다. `datetime(0)` 이라 소수점 아래는 반올림된다
 - ✅ `update` 는 인덱스까지 만든다 (2026-10-14 `SHOW CREATE TABLE` 에 `KEY` 2줄). MySQL 은 `datetime(0)` 을 `datetime` 으로 표시한다 — `(6)` 이 보이면 `secondPrecision` 이 안 먹은 것
 - 이 절은 인계용이라 길다. F6-2 가 끝나면 결정과 함정만 남기고 줄인다
 
