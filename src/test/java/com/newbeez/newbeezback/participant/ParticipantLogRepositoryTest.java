@@ -17,7 +17,7 @@ class ParticipantLogRepositoryTest {
 
     @Test
     void save_assigns_id() {
-        ParticipantLog log = new ParticipantLog("football", "man-city", "032104213");
+        ParticipantLog log = new ParticipantLog("football", "man-city", "032102223");
         assertNull(log.getId());
 
         ParticipantLog saved = repository.save(log);
