@@ -54,12 +54,17 @@
 | **F6-1** | **DB 설정** — `application.yml` + 환경변수 접속 → `bootRun` 성공 | ✅ `44e2283` |
 | **F6-2** | `participant_logs` 엔티티 + Repository + 테스트 | ✅ PR #2 `5559dd6` (2026-10-27) |
 | **F6-3** | `POST /api/v1/participants` — 4계층 첫 관통 | 🟡 **진행 중** (`feat/participant-api`) |
-| F6-4 | `GET /api/v1/participants/count` + **1분 캐시** | ⬜ |
+| F6-4 | `GET /api/v1/participants/count` + **1분 캐시** + **임계값은 서버에서** | ⬜ |
 | F6-5 | **CORS** — 브라우저가 직접 부르는 두 엔드포인트만 | ⬜ |
-| **F6.5** | **Flyway 전환** — `V1__participant_logs.sql` · `ddl-auto` 는 `validate` 고정 | ⬜ F7 직전 (2026-10-20 당김) |
-| F7 | `team_results`(읽기 전용 · Flyway `V2__` + `R__` 시드 15행) + `GET /results` | ⬜ **설계 확정 2026-10-20** — 프론트 S3 선행조건 없음(S3 폐기). 상세는 아래 "F7 설계 확정" |
+| **F6.5** | **Flyway 전환** — `V1__participant_logs.sql` · `ddl-auto` 는 `validate` 고정 | ⬜ **배포 전** (2026-10-27 F7 앞에서 배포 앞으로 이동) |
+| **D1** | **첫 배포** — Dockerfile · 운영 MySQL 8.4 · 환경변수 · 유휴 회수 없는 호스팅 | ⬜ 2026-10-27 추가 |
+| 연동 | 프론트가 완료 시 `POST` + `ParticipantCount` — 실제 참여자 수·답코드가 쌓이기 시작 | ⬜ (프론트 작업) |
+| F7 | `team_results`(읽기 전용 · Flyway `V2__` + `R__` 시드 15행) + `GET /results` | ⬜ **배포·연동 뒤** — 설계 확정 2026-10-20 · 백엔드 유지 2026-10-27. 상세는 아래 "F7 설계 확정" |
 
-이후: 배포처 확보(⚠️ Oracle Always Free 는 **7일 유휴 시 인스턴스 회수** — 프론트 FUTURE §4) → 댓글
+**순서 결정 (2026-10-27)** — 참여 기록 하나를 **배포까지 먼저** 끝낸다. 실제로 쓰이는 기능이 일찍 생기고, 답코드가 일찍 쌓이며(§5.2 "기록하지 않은 답은 되살릴 수 없다"), S8 이 의존하는 백엔드 호스팅이 S8 전에 준비된다.
+**팀 콘텐츠는 백엔드에 둔다 (2026-10-27 재검토)** — 프론트 정적 데이터로 옮기는 안을 검토했으나 유지. 팀 소개·인물은 코드와 따로 바뀌는 **편집 콘텐츠**라 DB 가 맞고, 3차 UGC·4차 카테고리도 DB 에 쌓인다. 대가: S8 이후 **백엔드가 죽으면 프론트 새 배포가 실패**한다(기존 결과 페이지는 마지막 성공본 유지) → D1 의 호스팅은 **유휴 회수가 없어야** 한다
+
+이후: 댓글 (2차)
 
 ### ✅ F6-1 DB 설정 — 2026-10-06
 
@@ -180,7 +185,11 @@ create index idx_created on participant_logs (created_at);
 
 ⚠️ **starter 만으로는 만료가 안 된다** — 기본 캐시(`ConcurrentMapCacheManager`)에는 TTL 기능이 없다(2026-10-06 jar 확인). 1분 만료를 쓰려면 Caffeine 같은 구현체가 함께 필요하다.
 
-### ⬜ F6.5 Flyway + F7 `team_results` — 설계 확정 (2026-10-20)
+**임계값은 서버가 적용한다** (2026-10-27 · 프론트 ARCHITECTURE §4.3) — 임계값 미만이면 숫자를 내보내지 않는다. 화면에서만 숨기면 API 를 직접 불러 "3명"을 볼 수 있다. 기준값(§9 #2)과 응답 모양은 F6-4 시작 때 정해 §6 에 적는다.
+
+### ⬜ F6.5 Flyway (배포 전) + F7 `team_results` (배포·연동 뒤) — 설계 확정 (2026-10-20)
+
+⚠️ **F6.5 함정 — 로컬 테이블은 Hibernate(`ddl-auto=update`)가 만들었다.** Flyway `V1__participant_logs.sql` 의 `create table` 이 "이미 있음"으로 실패한다 → 로컬 `participant_logs` 를 지우고 Flyway 가 만들게 하거나 baseline 설정. PC 마다 한 번씩(DB 가 PC 별로 따로라서)
 
 **스키마·칸 설명·검증 규칙의 원본은 프론트 ARCHITECTURE §5.1** (여기에 복사하지 않는다). 백엔드가 알아야 할 것만:
 
@@ -229,6 +238,7 @@ create index idx_created on participant_logs (created_at);
 ## 그 외
 
 - **로컬 DB**: MySQL 8.0.x · `MySQL80` 서비스 · DB `newbeez` — **PC마다 따로 있고 내용이 오가지 않는다**(위 F6-1 표). ⚠️ 8.0 은 2026-04-30 에 지원이 끝난 버전이다. 로컬 학습용으론 문제없지만 **배포 DB는 8.4 이상**으로 고른다
-- **배포처**: 1순위 Oracle Cloud Always Free 서울(A1 + MySQL HeatWave 50GB). **결정 보류** — A1 확보가 복불복이라 미리 시도 권장. 근거는 프론트 `docs/FUTURE.md` §4
+- **배포처**: 1순위 Oracle Cloud Always Free 서울(A1 + MySQL HeatWave 50GB). **결정은 D1 에서** — A1 확보가 복불복이라 미리 시도 권장. 근거는 프론트 `docs/FUTURE.md` §4. ⚠️ **필수 조건(2026-10-27): 유휴 회수가 없을 것** — Always Free 그대로면 7일 유휴 시 회수되므로 PAYG 전환이나 다른 호스팅이 필요하다(F7 이후 결과 페이지 빌드가 백엔드에 의존)
+- **D1 준비물** — Docker 28.5.2 가 `jun98` PC 에 있다(Dockerfile 시험 가능) · 레포에 Dockerfile 은 아직 없다
 - **락인 방어(지금부터 적용)**: 컨테이너화 · DB 접속은 환경변수로만 · Flyway · 트리거/프로시저 금지
 - **Instagram 임베드 테스트 페이지** `C:\dev\embed-test\index.html` (`이현준` PC · git 밖) — 327px 본문에 게시물/캡션/계정 카드 3종을 띄우고 렌더 시간·크기를 재는 정적 HTML. `python -m http.server 8000 --bind 127.0.0.1 --directory C:\dev\embed-test` 로 열람. 2026-10-20 PC 크롬 확인 완료, 실기기(iOS Safari·카톡 인앱)는 미확인(프론트 ARCHITECTURE §9 #6)
