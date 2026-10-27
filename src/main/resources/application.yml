@@ -10,3 +10,4 @@ spring:
   jpa:
     hibernate:
       ddl-auto: ${NEWBEEZ_DDL_AUTO:validate}
+    open-in-view: false
