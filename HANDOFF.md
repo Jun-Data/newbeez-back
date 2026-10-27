@@ -7,20 +7,20 @@
 > - 작업 규칙(역할·커밋·스택 주의점) → [CLAUDE.md](CLAUDE.md)
 > - 프론트 진행 상황 → 프론트 레포 `HANDOFF.md`
 
-**마지막 업데이트: 2026-10-27** — **F6-2 완료**(`2c17419` · 4b 롤백까지 측정으로 확인) · **PR #2(`feat/participant-log` → `main`) 머지 대기.** **다음은 F6-3 — 시작 전에 ARCHITECTURE §6 에 `POST /participants` 요청·응답 형태부터 적는다.** 2026-10-20 에 **F7 의 설계가 확정**됐다(이미지 없음 · `team_results` 전부 수동 시드 · Flyway 를 F7 직전으로) → 아래 F7 절 · 프론트 ARCHITECTURE §5.1·§6·§7 · `docs/LEGAL.md`
-🔀 **F6-2 전체가 브랜치 `feat/participant-log` 에 있다**(origin 에 푸시됨) — `main` 에는 4a ③ 까지만 병합됐다(PR #1 · 2026-10-16). **PR #2 머지 후 F6-3 은 `main` 에서 새 브랜치로 시작한다**
+**마지막 업데이트: 2026-10-27** — **F6-2 완료**(PR #2 머지 · `5559dd6`). **F6-3 진행 중** — 계약 확정(2026-10-27 · 프론트 ARCHITECTURE §6), 코드는 아래 F6-3 절의 2단계부터. 2026-10-20 에 **F7 의 설계가 확정**됐다(이미지 없음 · `team_results` 전부 수동 시드 · Flyway 를 F7 직전으로) → 아래 F7 절 · 프론트 ARCHITECTURE §5.1·§6·§7 · `docs/LEGAL.md`
+🔀 **작업은 브랜치 `feat/participant-api` 에 있다**(F6-3 · origin 에 푸시됨) — `main` 에는 F6-2 까지 병합됐다(PR #1 · #2). `main` 에 직접 커밋·push 하지 않는다 — PR 로만
 
 ### ▶ 다른 PC에서 이어갈 때
 
 대화 기록과 `.env`·DB 는 PC를 넘어가지 않는다. 넘어가는 것은 git 에 올린 것뿐이다.
 
-1. **백엔드** — PR #2 가 머지됐으면 `git switch main` 후 `git pull`. 아직이면 `git switch feat/participant-log` 후 `git pull`
-2. **프론트** — `git pull` (설계 문서가 `72f7197` 로 갱신됐다 — 이미지 없음 · Instagram 임베드 · `docs/LEGAL.md` 신설)
+1. **백엔드** — `git fetch --prune` 후 `git switch feat/participant-api` · `git pull`. 남아 있는 옛 로컬 브랜치 `feat/participant-log` 는 `git branch -d feat/participant-log` (PR #2 로 머지 완료)
+2. **프론트** — `git switch main` 후 `git pull` (2026-10-27 PR #2 로 §3.1 답코드 예시·문서 정정이 들어갔고, §6 계약은 별도 PR)
 3. **그 PC 의 준비** — 아래 F6-1 표에서 ⬜ 인 것부터(계정 · `.env`, `NEWBEEZ_DDL_AUTO=update` 포함). `bootRun` 이 404 까지 가면 그 PC 의 DB 에도 `participant_logs` 가 생긴 것이다 — Workbench `SHOW CREATE TABLE participant_logs;` 가 아래 SQL 과 같은지 본다
 4. **IntelliJ 를 쓰면 두 가지를 먼저 본다** — `.idea` 는 git 이 무시해서 PC마다 설정이 다르다
    - **Project SDK 가 21 인가** (File → Project Structure → Project → SDK). `jun98` PC 에는 실험판 `valhalla-ea-23` 이 잡혀 있었다 → 2026-10-16 `ms-21` (21.0.11) 로 바꿈
    - **실행은 상단 드롭다운의 `NewbeezBackApplication`(Spring Boot) ▶** — Gradle 실행 설정은 task 칸이 비어 있으면 `> Task :help` 만 돌고 앱이 안 켜진다
-5. **F6-3 부터** 이어간다 — PR #2 머지를 먼저 확인한다 (아래 "F6-3" 절)
+5. **F6-3** 을 이어간다 — 아래 "F6-3" 절의 진행 표에서 ⬜ 인 첫 단계부터
 6. ⚠️ **Claude 의 메모리는 PC마다 따로다** — 다른 PC가 알아야 할 결론은 이 파일과 프론트 문서에 옮겨 둔다 (F7 설계 확정 2026-10-20 · F6-2 의 패키지 구조 결정). 학습 진행 방식은 [CLAUDE.md](CLAUDE.md) 에 적었다
 
 ---
@@ -52,8 +52,8 @@
 | | 슬라이스 | 상태 |
 | --- | --- | --- |
 | **F6-1** | **DB 설정** — `application.yml` + 환경변수 접속 → `bootRun` 성공 | ✅ `44e2283` |
-| **F6-2** | `participant_logs` 엔티티 + Repository + 테스트 | ✅ `2c17419` — PR #2 머지 대기 |
-| F6-3 | `POST /api/v1/participants` — 4계층 첫 관통 | ⬜ **다음** |
+| **F6-2** | `participant_logs` 엔티티 + Repository + 테스트 | ✅ PR #2 `5559dd6` (2026-10-27) |
+| **F6-3** | `POST /api/v1/participants` — 4계층 첫 관통 | 🟡 **진행 중** (`feat/participant-api`) |
 | F6-4 | `GET /api/v1/participants/count` + **1분 캐시** | ⬜ |
 | F6-5 | **CORS** — 브라우저가 직접 부르는 두 엔드포인트만 | ⬜ |
 | **F6.5** | **Flyway 전환** — `V1__participant_logs.sql` · `ddl-auto` 는 `validate` 고정 | ⬜ F7 직전 (2026-10-20 당김) |
@@ -95,7 +95,7 @@
 - 로그의 `The following 1 profile is active: "loc"` 는 `jun98` PC 의 사용자 환경변수 탓이다(다른 프로젝트용). 해롭지 않지만 **설정을 프로필에 기대면 안 되는 이유**다 → [CLAUDE.md](CLAUDE.md) 규칙
 - 부팅 로그의 `spring.jpa.open-in-view is enabled by default` WARN 은 실패가 아니다. F6-3 에서 다룬다
 
-### ✅ F6-2 `participant_logs` 엔티티 · Repository · 테스트 — 2026-10-27 (`2c17419` · PR #2 머지 대기)
+### ✅ F6-2 `participant_logs` 엔티티 · Repository · 테스트 — 2026-10-27 (PR #2 · `5559dd6`)
 
 **설계 원본** — 프론트 `docs/ARCHITECTURE.md` §5.2.
 
@@ -144,13 +144,34 @@ create index idx_created on participant_logs (created_at);
 - ⚠️ **통과한 테스트는 콘솔에 아무것도 안 찍는다** — `println` 출력과 Spring 로그는 `build/test-results/test/*.xml` · `build/reports/tests/test/index.html` 에 있다. 실행은 `./gradlew test --tests "com.newbeez.newbeezback.participant.ParticipantLogRepositoryTest"`
 - ⚠️ **코드가 그대로면 Gradle 이 테스트를 건너뛴다**(`UP-TO-DATE`) — 그래도 `BUILD SUCCESSFUL` 이 뜬다. 마지막 줄 `N actionable tasks` 에 `executed` 가 있는지 보고, 다시 돌리려면 `--rerun` 을 붙인다. IntelliJ 에서 고친 파일은 **저장해야** Gradle 이 본다
 
-### ⬜ F6-3 첫 엔드포인트를 `participants` 로 잡은 이유
+### 🟡 F6-3 `POST /api/v1/participants` — 진행 중 (브랜치 `feat/participant-api`)
 
-`GET /results`(팀 표시 정보)를 먼저 하고 싶어지지만 **채울 내용이 아직 없다** — 15행 시드는 F6.5(Flyway) 뒤 F7 에서 만든다(2026-10-20 설계 · 옛 S3 슬라이스는 폐기). `participants` 는 의존성이 0이고, 프론트에 **받을 자리가 이미 있다**(`_components/ParticipantCount.tsx` 가 `return null` 로 대기 중).
+**왜 이것부터** — `GET /results`(팀 표시 정보)는 **채울 내용이 아직 없다** — 15행 시드는 F6.5(Flyway) 뒤 F7 에서 만든다(2026-10-20 설계 · 옛 S3 슬라이스는 폐기). `participants` 는 의존성이 0이고, 프론트에 **받을 자리가 이미 있다**(프론트 HANDOFF "F6 연동").
 
-⚠️ **시작 전에 프론트 문서부터** — ARCHITECTURE §6 에는 경로만 있고 **요청·응답 본문 형태가 없다.** 프론트에도 아직 호출부가 없으니, 계약을 §6 에 먼저 적고 양쪽이 그걸 따른다.
+**계약의 원본은 프론트 ARCHITECTURE §6** (2026-10-27 확정 · 여기에 복사하지 않는다). 백엔드가 알아야 할 것만:
 
-**답코드도 함께 받는다**(설계 §4.4·§5.2). 백엔드는 형식만 본다 — 형식이 틀렸을 때 **요청을 거절할지, 답코드만 비우고 기록은 남길지**를 여기서 정한다. 칸을 NULL 허용으로 둔 것은 뒤쪽을 가능하게 하려는 것이다.
+- `categorySlug` 는 **서버 허용 목록**(MVP: `football`)으로 검사 · `resultSlug` 는 **형식만** 검사(15팀 목록 대조 ✗) — 어기면 400
+- ⚠️ **`answerCode` 에는 `@Pattern` 을 걸지 않는다** — 걸면 요청 전체가 400 이 되어 "형식이 틀려도 참여 기록은 남긴다"(§5.2)를 어긴다. Service 에서 범용 형식(숫자 1~32자)만 보고 틀리면 `null` 로 저장. 축구 9자리 규칙은 Java 에 복사하지 않는다(원본 `lib/answer-code.ts`)
+- 성공은 **`201` 본문 없음** · **`id` 를 응답에 넣지 않는다** — 순번이라 전체 참여자 수가 드러나 §4.3 임계값을 우회한다
+- `application/json` POST → 브라우저가 `OPTIONS` 사전 요청을 보낸다 → **F6-5 CORS 에서 `OPTIONS`·`Content-Type` 허용**
+- 알고 받아들인 위험: 서버 쪽 중복·남용 방어 없음(중복 차단은 프론트 `sessionStorage` 뿐 · §4.4)
+
+**진행 상황** (2026-10-27 계획 승인)
+
+| | 할 일 | 누가 | 검증 |
+| --- | --- | --- | --- |
+| 0 | 브랜치 `feat/participant-api` + 이 HANDOFF 갱신 | Claude | ✅ |
+| 1 | 계약을 프론트 §6 에 기록 → 프론트 `docs/participants-contract` PR | Claude | ⬜ PR 머지 |
+| **2** | `application.yml` 에 `spring.jpa.open-in-view: false` **← 다음** | 사용자 | ⬜ `bootRun` 로그에서 open-in-view WARN 이 사라짐 |
+| 3 | `build.gradle` 에 `spring-boot-starter-validation` | 사용자 | ⬜ Gradle 새로고침 후 컴파일 (4.1.0 첫 다운로드 — 네트워크 필요) |
+| 4 | 요청 DTO `record` (`@NotBlank` · `@Pattern`) | 사용자 | ⬜ 컴파일 |
+| 5 | Service — 생성자 주입 · `@Transactional`(정상 종료 = 커밋) · 허용 목록 · 답코드 정리 | 사용자 | ⬜ 6·7 에서 |
+| 6 | Controller — `@PostMapping` · `@ResponseStatus(CREATED)` · `@Valid @RequestBody` | 사용자 | ⬜ `bootRun` + `curl.exe` — 정상 201 + 행 · slug 틀림 400 + 행 없음 · 답코드 틀림 201 + `NULL` |
+| 7 | 테스트 — `@SpringBootTest` + `@AutoConfigureMockMvc` + `MockMvcTester` + `@Transactional` | 사용자 | ⬜ `./gradlew test` |
+| 8 | HANDOFF 정리 · PR | Claude | ⬜ |
+
+- ⚠️ **PowerShell 에서 `curl` 은 `Invoke-WebRequest` 의 별칭이다** — 반드시 `curl.exe` 로 친다. IntelliJ HTTP Client(`.http` 파일)·Postman CLI 도 이 PC 에 있다
+- Spring Boot 4.1 의 테스트 애노테이션 패키지가 바뀌었다 — `@AutoConfigureMockMvc` 는 `org.springframework.boot.webmvc.test.autoconfigure` (jar 에서 확인). JUnit 은 **Jupiter 6.0.3**(JUnit 6)
 
 ### ⬜ F6-4 참여자 수 — `COUNT(*)` 를 매 요청 하지 말 것
 
