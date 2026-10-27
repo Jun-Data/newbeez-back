@@ -98,7 +98,7 @@
 - ⚠️ **YAML 들여쓰기 실수는 조용히 무시된다.** `datasource:` 가 한 단계 깊이 들어가면 `spring.application.config.datasource.url` 같은 **Spring 이 모르는 이름**이 되고 오류도 안 난다. 증상은 "고쳤는데 오류 문구가 그대로"
 - ⚠️ **`build` 도 DB를 요구한다** — `contextLoads` 테스트가 앱을 통째로 띄운다. 지금은 CI 가 없어 괜찮지만 배포용 빌드를 만들 때 다시 만난다
 - 로그의 `The following 1 profile is active: "loc"` 는 `jun98` PC 의 사용자 환경변수 탓이다(다른 프로젝트용). 해롭지 않지만 **설정을 프로필에 기대면 안 되는 이유**다 → [CLAUDE.md](CLAUDE.md) 규칙
-- 부팅 로그의 `spring.jpa.open-in-view is enabled by default` WARN 은 실패가 아니다. F6-3 에서 다룬다
+- ✅ 부팅 로그의 `spring.jpa.open-in-view is enabled by default` WARN — F6-3 에서 `open-in-view: false` 로 껐다(2026-10-27 · `e18fc06`)
 
 ### ✅ F6-2 `participant_logs` 엔티티 · Repository · 테스트 — 2026-10-27 (PR #2 · `5559dd6`)
 
@@ -166,9 +166,9 @@ create index idx_created on participant_logs (created_at);
 | | 할 일 | 누가 | 검증 |
 | --- | --- | --- | --- |
 | 0 | 브랜치 `feat/participant-api` + 이 HANDOFF 갱신 | Claude | ✅ |
-| 1 | 계약을 프론트 §6 에 기록 → 프론트 `docs/participants-contract` PR | Claude | ⬜ PR 머지 |
-| **2** | `application.yml` 에 `spring.jpa.open-in-view: false` **← 다음** | 사용자 | ⬜ `bootRun` 로그에서 open-in-view WARN 이 사라짐 |
-| 3 | `build.gradle` 에 `spring-boot-starter-validation` | 사용자 | ⬜ Gradle 새로고침 후 컴파일 (4.1.0 첫 다운로드 — 네트워크 필요) |
+| 1 | 계약을 프론트 §6 에 기록 → 프론트 `docs/participants-contract` PR | Claude | ✅ 프론트 PR #3 (2026-10-27) |
+| 2 | `application.yml` 에 `spring.jpa.open-in-view: false` | 사용자 | ✅ 2026-10-27 `e18fc06` — 테스트 로그의 open-in-view WARN 1건 → 0건 |
+| **3** | `build.gradle` 에 `spring-boot-starter-validation` **← 다음** | 사용자 | ⬜ Gradle 새로고침 후 컴파일 (4.1.0 첫 다운로드 — 네트워크 필요) |
 | 4 | 요청 DTO `record` (`@NotBlank` · `@Pattern`) | 사용자 | ⬜ 컴파일 |
 | 5 | Service — 생성자 주입 · `@Transactional`(정상 종료 = 커밋) · 허용 목록 · 답코드 정리 | 사용자 | ⬜ 6·7 에서 |
 | 6 | Controller — `@PostMapping` · `@ResponseStatus(CREATED)` · `@Valid @RequestBody` | 사용자 | ⬜ `bootRun` + `curl.exe` — 정상 201 + 행 · slug 틀림 400 + 행 없음 · 답코드 틀림 201 + `NULL` |
