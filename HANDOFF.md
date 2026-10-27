@@ -169,8 +169,8 @@ create index idx_created on participant_logs (created_at);
 | 1 | 계약을 프론트 §6 에 기록 → 프론트 `docs/participants-contract` PR | Claude | ✅ 프론트 PR #3 (2026-10-27) |
 | 2 | `application.yml` 에 `spring.jpa.open-in-view: false` | 사용자 | ✅ 2026-10-27 `e18fc06` — 테스트 로그의 open-in-view WARN 1건 → 0건 |
 | 3 | `build.gradle` 에 `spring-boot-starter-validation` | 사용자 | ✅ 2026-10-27 `3129662` — starter 4.1.0 · hibernate-validator 9.1.0.Final 다운로드 · 테스트 통과 |
-| **4** | 요청 DTO `record` (`@NotBlank` · `@Pattern`) **← 다음** | 사용자 | ⬜ 컴파일 |
-| 5 | Service — 생성자 주입 · `@Transactional`(정상 종료 = 커밋) · 허용 목록 · 답코드 정리 | 사용자 | ⬜ 6·7 에서 |
+| 4 | 요청 DTO `record` (`@NotBlank` · `@Pattern`) | 사용자 | ✅ 2026-10-27 `ee6cd41` — 컴파일 · `javap` 로 생성 멤버와 검사 애노테이션 확인 |
+| **5** | Service — 생성자 주입 · `@Transactional`(정상 종료 = 커밋) · 답코드 정리 **← 다음** | 사용자 | ⬜ 컴파일 + 테스트로 앱이 Service 빈을 만드는지 · 동작은 6·7 에서 |
 | 6 | Controller — `@PostMapping` · `@ResponseStatus(CREATED)` · `@Valid @RequestBody` | 사용자 | ⬜ `bootRun` + `curl.exe` — 정상 201 + 행 · slug 틀림 400 + 행 없음 · 답코드 틀림 201 + `NULL` |
 | 7 | 테스트 — `@SpringBootTest` + `@AutoConfigureMockMvc` + `MockMvcTester` + `@Transactional` | 사용자 | ⬜ `./gradlew test` |
 | 8 | HANDOFF 정리 · PR | Claude | ⬜ |
