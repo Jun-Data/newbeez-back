@@ -53,8 +53,8 @@
 | --- | --- | --- |
 | **F6-1** | **DB 설정** — `application.yml` + 환경변수 접속 → `bootRun` 성공 | ✅ `44e2283` |
 | **F6-2** | `participant_logs` 엔티티 + Repository + 테스트 | ✅ PR #2 `5559dd6` (2026-10-27) |
-| **F6-3** | `POST /api/v1/participants` — 4계층 첫 관통 | 🟡 **진행 중** (`feat/participant-api`) |
-| F6-4 | `GET /api/v1/participants/count` + **1분 캐시** + **임계값은 서버에서** | ⬜ |
+| **F6-3** | `POST /api/participants` — 4계층 첫 관통 | 🟡 **진행 중** (`feat/participant-api`) |
+| F6-4 | `GET /api/participants/count` + **1분 캐시** + **임계값은 서버에서** | ⬜ |
 | F6-5 | **CORS** — 브라우저가 직접 부르는 두 엔드포인트만 | ⬜ |
 | **F6.5** | **Flyway 전환** — `V1__participant_logs.sql` · `ddl-auto` 는 `validate` 고정 | ⬜ **배포 전** (2026-10-27 F7 앞에서 배포 앞으로 이동) |
 | **D1** | **첫 배포** — Dockerfile · 운영 MySQL 8.4 · 환경변수 · 유휴 회수 없는 호스팅 | ⬜ 2026-10-27 추가 |
@@ -149,7 +149,9 @@ create index idx_created on participant_logs (created_at);
 - ⚠️ **통과한 테스트는 콘솔에 아무것도 안 찍는다** — `println` 출력과 Spring 로그는 `build/test-results/test/*.xml` · `build/reports/tests/test/index.html` 에 있다. 실행은 `./gradlew test --tests "com.newbeez.newbeezback.participant.ParticipantLogRepositoryTest"`
 - ⚠️ **코드가 그대로면 Gradle 이 테스트를 건너뛴다**(`UP-TO-DATE`) — 그래도 `BUILD SUCCESSFUL` 이 뜬다. 마지막 줄 `N actionable tasks` 에 `executed` 가 있는지 보고, 다시 돌리려면 `--rerun` 을 붙인다. IntelliJ 에서 고친 파일은 **저장해야** Gradle 이 본다
 
-### 🟡 F6-3 `POST /api/v1/participants` — 진행 중 (브랜치 `feat/participant-api`)
+### 🟡 F6-3 `POST /api/participants` — 진행 중 (브랜치 `feat/participant-api`)
+
+**주소에 버전을 넣지 않는다** (2026-10-28 · 프론트 ARCHITECTURE §6) — 베이스 `/api`. 깨지는 변경은 백엔드를 먼저 배포해 옛 모양·새 모양을 둘 다 지원 → 프론트 배포 → 옛 모양 제거 순서로 한다.
 
 **왜 이것부터** — `GET /results`(팀 표시 정보)는 **채울 내용이 아직 없다** — 15행 시드는 F6.5(Flyway) 뒤 F7 에서 만든다(2026-10-20 설계 · 옛 S3 슬라이스는 폐기). `participants` 는 의존성이 0이고, 프론트에 **받을 자리가 이미 있다**(프론트 HANDOFF "F6 연동").
 
