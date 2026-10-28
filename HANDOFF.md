@@ -7,7 +7,7 @@
 > - 작업 규칙(역할·커밋·스택 주의점) → [CLAUDE.md](CLAUDE.md)
 > - 프론트 진행 상황 → 프론트 레포 `HANDOFF.md`
 
-**마지막 업데이트: 2026-10-28** — **F6-3 진행 중** — 1~6단계 완료(Controller 까지 · 실제 요청 6건 확인), 다음은 아래 F6-3 절의 **7단계(자동 테스트)**. F6-2 완료(PR #2 머지 · `5559dd6`). **F7 설계는 2026-10-20 확정**(이미지 없음 · `team_results` 전부 수동 시드) · Flyway 는 첫 배포 전 F6.5 → 아래 F6.5·F7 절 · 프론트 ARCHITECTURE §5.1·§6·§7 · `docs/LEGAL.md`
+**마지막 업데이트: 2026-10-28** — **F6-3 진행 중** — 1~6단계 완료(Controller 까지 · 실제 요청 6건 확인). **7단계(자동 테스트)는 7-1 뼈대까지** — 다음은 아래 F6-3 절 "7단계 세부"의 **7-2**. F6-2 완료(PR #2 머지 · `5559dd6`). **F7 설계는 2026-10-20 확정**(이미지 없음 · `team_results` 전부 수동 시드) · Flyway 는 첫 배포 전 F6.5 → 아래 F6.5·F7 절 · 프론트 ARCHITECTURE §5.1·§6·§7 · `docs/LEGAL.md`
 🔀 **작업은 브랜치 `feat/participant-api` 에 있다**(F6-3 · origin 에 푸시됨) — `main` 에는 F6-2 까지 병합됐다(PR #1 · #2). `main` 에 직접 커밋·push 하지 않는다 — PR 로만
 
 ### ▶ 다른 PC에서 이어갈 때
@@ -174,8 +174,23 @@ create index idx_created on participant_logs (created_at);
 | 4 | 요청 DTO `record` (`@NotBlank` · `@Pattern`) | 사용자 | ✅ 2026-10-27 `ee6cd41` — 컴파일 · `javap` 로 생성 멤버와 검사 애노테이션 확인 |
 | 5 | Service — 생성자 주입 · `@Transactional`(정상 종료 = 커밋) · 답코드 정리 | 사용자 | ✅ 2026-10-28 `bc7bded` — 테스트로 앱이 떠서 Service 빈 생성 확인. `@Transactional` 은 지금 `save` 하나라 결과가 같지만 작업 단위 표시로 붙임(2026-10-28 결정) |
 | 6 | Controller — `@PostMapping` · `@ResponseStatus(CREATED)` · `@Valid @RequestBody` | 사용자 | ✅ 2026-10-28 `a311e25` — `compileJava`(1 executed · `.class` 시각 확인) · `bootRun` 후 `http/participants.http` 6건: 201·201·201·400·400·405 · DB 9~11번 행(답코드 `032102223` / `NULL` / `NULL` — `IS NULL` 로 확인) · slug 틀림·깨진 JSON 은 행 없음 · GET 은 `Allow: POST` |
-| **7** | 테스트 — `@SpringBootTest` + `@AutoConfigureMockMvc` + `MockMvcTester` + `@Transactional` **← 다음** | 사용자 | ⬜ `./gradlew test` — 위 6건을 테스트 코드로 |
+| **7** | 테스트 — `@SpringBootTest` + `@AutoConfigureMockMvc` + `MockMvcTester` + `@Transactional` **← 진행 중** | 사용자 | 🟡 아래 "7단계 세부" — 위 6건을 테스트 코드로 · `./gradlew test` |
 | 8 | HANDOFF 정리 · PR | Claude | ⬜ |
+
+**7단계 세부** (2026-10-28 · 다른 PC 에서는 "← 다음" 부터)
+
+| | 할 일 | 검증 |
+| --- | --- | --- |
+| 7-1 | 테스트 클래스 뼈대 `src/test/.../participant/ParticipantLogControllerTest.java` — 애노테이션 3개 + `MockMvcTester`·Repository 필드 주입 | ✅ `ca87577` 코드 읽기 |
+| **7-2** | ① 정상 → 201 · 답코드 `032102223` 저장 **← 다음** | 테스트 실행 |
+| 7-3 | ② 답코드 없음 · ③ 답코드 `"abc"` → 201 · `NULL` 저장 | 테스트 실행 |
+| 7-4 | ④ slug 틀림 · ⑤ 깨진 JSON → 400 · ⑥ GET → 405 + `Allow: POST` — 행 수 그대로 | 테스트 실행 |
+| 7-5 | (선택) `@Valid` 를 잠깐 지워 ④ 가 실패하는지 보고 되돌린다 — 테스트가 정말 잡아내는지 | 실패해야 정상 |
+
+- 6건은 `http/participants.http` 와 같다 — 테스트 메서드 하나 = 요청 하나
+- **기존 행에 기대지 않는다** — 로컬 DB 마다 행이 다르다. 행 수는 `repository.count()` 전후 차이로, 방금 저장한 행은 `repository.findAll(Sort.by(Sort.Direction.DESC, "id")).getFirst()` 로 본다
+- 확인한 API (jar · spring-test 7.0.8 · AssertJ 3.27.7): `assertThat(mvc.post().uri("/api/participants").contentType(MediaType.APPLICATION_JSON).content("""…"""))` 가 요청을 실행하고 `.hasStatus(HttpStatus.CREATED)` · `.headers().hasValue("Allow", "POST")` 로 검사한다. `assertThat` 은 `org.assertj.core.api.Assertions`
+- 실행 `./gradlew test --tests com.newbeez.newbeezback.participant.ParticipantLogControllerTest` (MySQL 필요) — `BUILD SUCCESSFUL` 대신 `build/test-results/test/TEST-…ParticipantLogControllerTest.xml` 의 tests·failures·시각으로 확인
 
 - ⚠️ **PowerShell 에서 `curl` 은 `Invoke-WebRequest` 의 별칭이다** — `curl.exe` 로 쳐야 한다. 게다가 **Windows PowerShell 5.1 은 `curl.exe` 같은 프로그램에 넘기는 인자에서 큰따옴표를 지운다** — `-d '{"categorySlug":"football"}'` 가 `{categorySlug:football}` 로 넘어가 400 이 된다(측정). **JSON 요청은 `http/participants.http`(IntelliJ HTTP Client · 요청 옆 ▶)로 보낸다.** Postman CLI 도 이 PC 에 있다
 - Spring Boot 4.1 의 테스트 애노테이션 패키지가 바뀌었다 — `@AutoConfigureMockMvc` 는 `org.springframework.boot.webmvc.test.autoconfigure` (jar 에서 확인). JUnit 은 **Jupiter 6.0.3**(JUnit 6)
