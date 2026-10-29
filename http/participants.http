@@ -1,0 +1,36 @@
+# 참여 기록 API 수동 확인 — IntelliJ HTTP Client (요청 왼쪽 ▶ 로 전송)
+# 계약 원본: 프론트 docs/ARCHITECTURE.md §6 `POST /participants`
+# 앱을 먼저 켠다: ./gradlew bootRun
+
+### ① 정상 → 201 · 행 추가 (answer_code = 032102223)
+POST http://localhost:8080/api/participants
+Content-Type: application/json
+
+{"categorySlug": "football", "resultSlug": "man-city", "answerCode": "032102223"}
+
+### ② 답코드 없음 → 201 · 행 추가 (answer_code = NULL)
+POST http://localhost:8080/api/participants
+Content-Type: application/json
+
+{"categorySlug": "football", "resultSlug": "man-city"}
+
+### ③ 답코드 형식 틀림 → 201 · 행 추가 (answer_code = NULL)
+POST http://localhost:8080/api/participants
+Content-Type: application/json
+
+{"categorySlug": "football", "resultSlug": "man-city", "answerCode": "abc"}
+
+### ④ slug 형식 틀림 → 400 · 저장 안 됨
+POST http://localhost:8080/api/participants
+Content-Type: application/json
+
+{"categorySlug": "football", "resultSlug": "MAN CITY", "answerCode": "032102223"}
+
+### ⑤ 일부러 깨뜨린 JSON → 400 · 저장 안 됨
+POST http://localhost:8080/api/participants
+Content-Type: application/json
+
+{"categorySlug": "football", "resultSlug":
+
+### ⑥ 없는 메서드 → 405
+GET http://localhost:8080/api/participants
