@@ -7,20 +7,20 @@
 > - 작업 규칙(역할·커밋·스택 주의점) → [CLAUDE.md](CLAUDE.md)
 > - 프론트 진행 상황 → 프론트 레포 `HANDOFF.md`
 
-**마지막 업데이트: 2026-10-29** — **F6-3 구현 완료 · PR 대기** — 1~8단계 끝(Controller · 자동 테스트 6개 · `./gradlew test` 7건 통과). 남은 일은 **사용자가 웹에서 PR 을 만들고 머지**하는 것 → 그다음 **F6-4**. F6-2 완료(PR #2 머지 · `5559dd6`). **F7 설계는 2026-10-20 확정**(이미지 없음 · `team_results` 전부 수동 시드) · Flyway 는 첫 배포 전 F6.5 → 아래 F6.5·F7 절 · 프론트 ARCHITECTURE §5.1·§6·§7 · `docs/LEGAL.md`
-🔀 **작업은 브랜치 `feat/participant-api` 에 있다**(F6-3 · origin 에 푸시됨) — `main` 에는 F6-2 와 **F6-3 4단계(DTO)까지** 병합됐다(PR #1~#4 · 2026-10-27 `c868a8d`). 5단계(Service)부터는 다음 PR 로 들어간다. `main` 에 직접 커밋·push 하지 않는다 — PR 로만
+**마지막 업데이트: 2026-10-29** — **F6-3 완료**(PR #3·#4·#5 · `8e640af`). **F6-4 시작** — 계약 결정(임계값 없음 · 카테고리별 · `{ "count": N }`) → 다음은 아래 F6-4 절 진행 표의 **1단계(프론트 문서 PR)**. F6-2 완료(PR #2 머지 · `5559dd6`). **F7 설계는 2026-10-20 확정**(이미지 없음 · `team_results` 전부 수동 시드) · Flyway 는 첫 배포 전 F6.5 → 아래 F6.5·F7 절 · 프론트 ARCHITECTURE §5.1·§6·§7 · `docs/LEGAL.md`
+🔀 **작업은 브랜치 `feat/participant-count` 에 있다**(F6-4) — `main` 에는 F6-3 까지 병합됐다(PR #1~#5 · 2026-10-29 `8e640af`). `main` 에 직접 커밋·push 하지 않는다 — PR 로만
 
 ### ▶ 다른 PC에서 이어갈 때
 
 대화 기록과 `.env`·DB 는 PC를 넘어가지 않는다. 넘어가는 것은 git 에 올린 것뿐이다.
 
-1. **백엔드** — `git fetch --prune` 후 F6-3 PR 이 **머지 전이면** `git switch feat/participant-api` · `git pull`, **머지 후면** `git switch main` · `git pull` 하고 F6-4 브랜치를 새로 딴다. 남아 있는 옛 로컬 브랜치 `feat/participant-log` 는 `git branch -d feat/participant-log` (PR #2 로 머지 완료)
+1. **백엔드** — `git fetch --prune` 후 `git switch feat/participant-count` · `git pull`. 남아 있는 옛 로컬 브랜치 `feat/participant-log` · `feat/participant-api` 는 `git branch -d` 로 지운다 (PR #2 · #5 로 머지 완료)
 2. **프론트** — `git switch main` 후 `git pull` (§6 `POST /participants` 계약 PR #3 · 주소 버전 제거 PR #4 까지 main 에 있다)
 3. **그 PC 의 준비** — 아래 F6-1 표에서 ⬜ 인 것부터(계정 · `.env`, `NEWBEEZ_DDL_AUTO=update` 포함). `bootRun` 이 404 까지 가면 그 PC 의 DB 에도 `participant_logs` 가 생긴 것이다 — Workbench `SHOW CREATE TABLE participant_logs;` 가 아래 SQL 과 같은지 본다
 4. **IntelliJ 를 쓰면 두 가지를 먼저 본다** — `.idea` 는 git 이 무시해서 PC마다 설정이 다르다
    - **Project SDK 가 21 인가** (File → Project Structure → Project → SDK). `jun98` PC 에는 실험판 `valhalla-ea-23` 이 잡혀 있었다 → 2026-10-16 `ms-21` (21.0.11) 로 바꿈
    - **실행은 상단 드롭다운의 `NewbeezBackApplication`(Spring Boot) ▶** — Gradle 실행 설정은 task 칸이 비어 있으면 `> Task :help` 만 돌고 앱이 안 켜진다
-5. **F6-3 PR 이 머지됐는지** 확인하고 → **F6-4** 를 시작한다(아래 F6-4 절). F6-3 의 기록은 아래 "F6-3" 절
+5. **F6-4** 를 이어간다 — 아래 "F6-4" 절의 진행 표에서 ⬜ 인 첫 단계부터
 6. ⚠️ **Claude 의 메모리는 PC마다 따로다** — 다른 PC가 알아야 할 결론은 이 파일과 프론트 문서에 옮겨 둔다 (F7 설계 확정 2026-10-20 · F6-2 의 패키지 구조 결정). 학습 진행 방식은 [CLAUDE.md](CLAUDE.md) 에 적었다
 
 ---
@@ -53,8 +53,8 @@
 | --- | --- | --- |
 | **F6-1** | **DB 설정** — `application.yml` + 환경변수 접속 → `bootRun` 성공 | ✅ `44e2283` |
 | **F6-2** | `participant_logs` 엔티티 + Repository + 테스트 | ✅ PR #2 `5559dd6` (2026-10-27) |
-| **F6-3** | `POST /api/participants` — 4계층 첫 관통 | ✅ 2026-10-29 구현·테스트 완료 · **PR 대기** (`feat/participant-api`) |
-| F6-4 | `GET /api/participants/count` + **1분 캐시** + **임계값은 서버에서** | ⬜ |
+| **F6-3** | `POST /api/participants` — 4계층 첫 관통 | ✅ PR #3·#4·#5 `8e640af` (2026-10-29) |
+| **F6-4** | `GET /api/participants/count?categorySlug=` + **1분 캐시** (임계값 없음 · 2026-10-29) | 🟡 **진행 중** (`feat/participant-count`) |
 | F6-5 | **CORS** — 브라우저가 직접 부르는 두 엔드포인트만 | ⬜ |
 | **F6.5** | **Flyway 전환** — `V1__participant_logs.sql` · `ddl-auto` 는 `validate` 고정 | ⬜ **배포 전** (2026-10-27 F7 앞에서 배포 앞으로 이동) |
 | **D1** | **첫 배포** — Dockerfile · 운영 MySQL 8.4 · 환경변수 · 유휴 회수 없는 호스팅 | ⬜ 2026-10-27 추가 |
@@ -149,7 +149,7 @@ create index idx_created on participant_logs (created_at);
 - ⚠️ **통과한 테스트는 콘솔에 아무것도 안 찍는다** — `println` 출력과 Spring 로그는 `build/test-results/test/*.xml` · `build/reports/tests/test/index.html` 에 있다. 한 클래스만 실행은 `./gradlew test --tests "com.newbeez.newbeezback.participant.ParticipantLogControllerTest"`
 - ⚠️ **코드가 그대로면 Gradle 이 테스트를 건너뛴다**(`UP-TO-DATE`) — 그래도 `BUILD SUCCESSFUL` 이 뜬다. 마지막 줄 `N actionable tasks` 에 `executed` 가 있는지 보고, 다시 돌리려면 `--rerun` 을 붙인다. IntelliJ 에서 고친 파일은 **저장해야** Gradle 이 본다
 
-### ✅ F6-3 `POST /api/participants` — 2026-10-29 구현 완료 · PR 대기 (브랜치 `feat/participant-api`)
+### ✅ F6-3 `POST /api/participants` — 2026-10-29 (PR #3·#4·#5 · `8e640af`)
 
 **주소에 버전을 넣지 않는다** (2026-10-28 · 프론트 ARCHITECTURE §6) — 베이스 `/api`. 깨지는 변경은 백엔드를 먼저 배포해 옛 모양·새 모양을 둘 다 지원 → 프론트 배포 → 옛 모양 제거 순서로 한다.
 
@@ -159,7 +159,7 @@ create index idx_created on participant_logs (created_at);
 
 - `categorySlug` 는 **서버 허용 목록**(MVP: `football`)으로 검사 · `resultSlug` 는 **형식만** 검사(15팀 목록 대조 ✗) — 어기면 400
 - ⚠️ **`answerCode` 에는 `@Pattern` 을 걸지 않는다** — 걸면 요청 전체가 400 이 되어 "형식이 틀려도 참여 기록은 남긴다"(§5.2)를 어긴다. Service 에서 범용 형식(숫자 1~32자)만 보고 틀리면 `null` 로 저장. 축구 9자리 규칙은 Java 에 복사하지 않는다(원본 `lib/answer-code.ts`)
-- 성공은 **`201` 본문 없음** · **`id` 를 응답에 넣지 않는다** — 순번이라 전체 참여자 수가 드러나 §4.3 임계값을 우회한다
+- 성공은 **`201` 본문 없음** · **`id` 를 응답에 넣지 않는다** — 프론트가 쓰지 않는다 (2026-10-29 임계값 폐기로 "참여자 수가 드러난다"는 이유는 빠짐)
 - `application/json` POST → 브라우저가 `OPTIONS` 사전 요청을 보낸다 → **F6-5 CORS 에서 `OPTIONS`·`Content-Type` 허용**
 - 알고 받아들인 위험: 서버 쪽 중복·남용 방어 없음(중복 차단은 프론트 `sessionStorage` 뿐 · §4.4)
 
@@ -175,7 +175,7 @@ create index idx_created on participant_logs (created_at);
 | 5 | Service — 생성자 주입 · `@Transactional`(정상 종료 = 커밋) · 답코드 정리 | 사용자 | ✅ 2026-10-28 `bc7bded` — 테스트로 앱이 떠서 Service 빈 생성 확인. `@Transactional` 은 지금 `save` 하나라 결과가 같지만 작업 단위 표시로 붙임(2026-10-28 결정) |
 | 6 | Controller — `@PostMapping` · `@ResponseStatus(CREATED)` · `@Valid @RequestBody` | 사용자 | ✅ 2026-10-28 `a311e25` — `compileJava`(1 executed · `.class` 시각 확인) · `bootRun` 후 `http/participants.http` 6건: 201·201·201·400·400·405 · DB 9~11번 행(답코드 `032102223` / `NULL` / `NULL` — `IS NULL` 로 확인) · slug 틀림·깨진 JSON 은 행 없음 · GET 은 `Allow: POST` |
 | 7 | 테스트 — `@SpringBootTest` + `@AutoConfigureMockMvc` + `MockMvcTester` + `@Transactional` | 사용자 | ✅ 2026-10-29 `e8b1d13` — 위 6건을 테스트 6개로 · `./gradlew test` 7건 통과(Controller 6 · contextLoads 1). F6-2 의 Repository 테스트는 중복이라 삭제(`6489263`) |
-| 8 | HANDOFF 정리 · push · PR 초안 | Claude | ✅ 2026-10-29 — PR 생성·머지는 사용자(웹). 프론트 문서는 고칠 곳 없음(§6 계약이 구현·테스트와 일치) |
+| 8 | HANDOFF 정리 · push · PR 초안 | Claude | ✅ 2026-10-29 — PR #5 머지(`8e640af`) · 브랜치 삭제. 프론트 문서는 고칠 곳 없음(§6 계약이 구현·테스트와 일치) |
 
 **7단계 세부** (2026-10-28 계획 · 2026-10-29 완료)
 
@@ -204,14 +204,31 @@ create index idx_created on participant_logs (created_at);
 - ⚠️ **PowerShell 에서 `curl` 은 `Invoke-WebRequest` 의 별칭이다** — `curl.exe` 로 쳐야 한다. 게다가 **Windows PowerShell 5.1 은 `curl.exe` 같은 프로그램에 넘기는 인자에서 큰따옴표를 지운다** — `-d '{"categorySlug":"football"}'` 가 `{categorySlug:football}` 로 넘어가 400 이 된다(측정). **JSON 요청은 `http/participants.http`(IntelliJ HTTP Client · 요청 옆 ▶)로 보낸다.** Postman CLI 도 이 PC 에 있다
 - Spring Boot 4.1 의 테스트 애노테이션 패키지가 바뀌었다 — `@AutoConfigureMockMvc` 는 `org.springframework.boot.webmvc.test.autoconfigure` (jar 에서 확인). JUnit 은 **Jupiter 6.0.3**(JUnit 6)
 
-### ⬜ F6-4 참여자 수 — `COUNT(*)` 를 매 요청 하지 말 것
+### 🟡 F6-4 참여자 수 `GET /api/participants/count` — 진행 중 (브랜치 `feat/participant-count`)
 
-바이럴로 수십만 행이 쌓이면 체감된다. **1분 TTL 캐시**(`@Cacheable`). 1분 늦게 갱신돼도 문제없다.
-→ `spring-boot-starter-cache` 의존성이 **아직 build.gradle 에 없다.** F6-4 에서 추가.
+**계약의 원본은 프론트 ARCHITECTURE §6** (2026-10-29 확정 · 여기에 복사하지 않는다). 백엔드가 알아야 할 것만:
 
-⚠️ **starter 만으로는 만료가 안 된다** — 기본 캐시(`ConcurrentMapCacheManager`)에는 TTL 기능이 없다(2026-10-06 jar 확인). 1분 만료를 쓰려면 Caffeine 같은 구현체가 함께 필요하다.
+- **임계값 없음** (2026-10-29 사용자 결정 — 2026-10-27 "서버가 숨긴다"를 뒤집음) — 0 이어도 그대로 돌려준다
+- **카테고리별** — 쿼리 `categorySlug` 필수 · `POST` 와 같은 허용 목록(`football`) · 어기면 400. 전체 수(`repository.count()`)가 아니라 `category_slug` 로 거른 수를 센다
+- 응답 `200` · `{ "count": N }` — 칸 이름이 있는 객체
+- **`COUNT(*)` 를 매 요청 하지 말 것** — 바이럴로 수십만 행이 쌓이면 체감된다. **1분 캐시**(`@Cacheable`) · 카테고리마다 따로. 1분 늦게 갱신돼도 문제없다
 
-**임계값은 서버가 적용한다** (2026-10-27 · 프론트 ARCHITECTURE §4.3) — 임계값 미만이면 숫자를 내보내지 않는다. 화면에서만 숨기면 API 를 직접 불러 "3명"을 볼 수 있다. 기준값(§9 #2)과 응답 모양은 F6-4 시작 때 정해 §6 에 적는다.
+⚠️ **starter 만으로는 만료가 안 된다** — 기본 캐시(`ConcurrentMapCacheManager`)에는 TTL 기능이 없다(2026-10-06 jar 확인). `spring-boot-starter-cache` 와 함께 Caffeine 이 필요하다 — 의존성 이름·설정 키는 6단계에서 jar 로 확인
+⚠️ **캐시가 테스트를 속일 수 있다(예상)** — 같은 앱 안에서 `POST` 뒤 `GET count` 를 하면 1분이 안 지나 옛 숫자가 나온다. 테스트 설계는 7단계에서 정한다
+
+**진행 상황** (2026-10-29 · 캐시는 일부러 뒤에 — 캐시 없이 먼저 확인해 둬야 캐시의 효과가 보인다)
+
+| | 할 일 | 누가 | 검증 |
+| --- | --- | --- | --- |
+| 0 | 브랜치 `feat/participant-count` + 이 HANDOFF 갱신 | Claude | ✅ |
+| 1 | 계약 → 프론트 §4.3 · §6 · §9 #2 + 프론트 HANDOFF → 프론트 `docs/participant-count-contract` PR | Claude | 🟡 커밋까지 · 승인 후 push·PR |
+| 2 | Repository — `category_slug` 로 거른 수 세기 | 사용자 | ⬜ |
+| 3 | Service — 세기 (캐시 없이) | 사용자 | ⬜ |
+| 4 | Controller — `GET` · 쿼리 검사 · `{ count }` 응답 | 사용자 | ⬜ |
+| 5 | `http/participants.http` 에 요청 추가 — `POST` 하면 숫자가 바로 느는지 | 사용자 | ⬜ |
+| 6 | 캐시 — `build.gradle`(starter + Caffeine) · 설정 · `@Cacheable` → 1분 동안 숫자가 안 바뀌는지 | 사용자 | ⬜ |
+| 7 | 테스트 | 사용자 | ⬜ |
+| 8 | HANDOFF 정리 · PR | Claude | ⬜ |
 
 ### ⬜ F6.5 Flyway (배포 전) + F7 `team_results` (배포·연동 뒤) — 설계 확정 (2026-10-20)
 
