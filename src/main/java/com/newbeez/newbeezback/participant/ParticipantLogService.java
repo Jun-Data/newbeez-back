@@ -20,6 +20,11 @@ public class ParticipantLogService {
         repository.save(log);
     }
 
+    @Transactional(readOnly = true)
+    public long count(String categorySlug) {
+        return repository.countByCategorySlug(categorySlug);
+    }
+
     // 범용 형식(숫자 1~32자)만 본다 - 틀리면 null로 바꾸고 기록은 남긴다
     private static String normalizeAnswerCode(String answerCode) {
         if (answerCode == null || !answerCode.matches("[0-9]{1,32}")) {
