@@ -7,20 +7,20 @@
 > - 작업 규칙(역할·커밋·스택 주의점) → [CLAUDE.md](CLAUDE.md)
 > - 프론트 진행 상황 → 프론트 레포 `HANDOFF.md`
 
-**마지막 업데이트: 2026-10-28** — **F6-3 진행 중** — 1~6단계 완료(Controller 까지 · 실제 요청 6건 확인). **7단계(자동 테스트)는 7-1 뼈대까지** — 다음은 아래 F6-3 절 "7단계 세부"의 **7-2**. F6-2 완료(PR #2 머지 · `5559dd6`). **F7 설계는 2026-10-20 확정**(이미지 없음 · `team_results` 전부 수동 시드) · Flyway 는 첫 배포 전 F6.5 → 아래 F6.5·F7 절 · 프론트 ARCHITECTURE §5.1·§6·§7 · `docs/LEGAL.md`
-🔀 **작업은 브랜치 `feat/participant-api` 에 있다**(F6-3 · origin 에 푸시됨) — `main` 에는 F6-2 까지 병합됐다(PR #1 · #2). `main` 에 직접 커밋·push 하지 않는다 — PR 로만
+**마지막 업데이트: 2026-10-29** — **F6-3 구현 완료 · PR 대기** — 1~8단계 끝(Controller · 자동 테스트 6개 · `./gradlew test` 7건 통과). 남은 일은 **사용자가 웹에서 PR 을 만들고 머지**하는 것 → 그다음 **F6-4**. F6-2 완료(PR #2 머지 · `5559dd6`). **F7 설계는 2026-10-20 확정**(이미지 없음 · `team_results` 전부 수동 시드) · Flyway 는 첫 배포 전 F6.5 → 아래 F6.5·F7 절 · 프론트 ARCHITECTURE §5.1·§6·§7 · `docs/LEGAL.md`
+🔀 **작업은 브랜치 `feat/participant-api` 에 있다**(F6-3 · origin 에 푸시됨) — `main` 에는 F6-2 와 **F6-3 4단계(DTO)까지** 병합됐다(PR #1~#4 · 2026-10-27 `c868a8d`). 5단계(Service)부터는 다음 PR 로 들어간다. `main` 에 직접 커밋·push 하지 않는다 — PR 로만
 
 ### ▶ 다른 PC에서 이어갈 때
 
 대화 기록과 `.env`·DB 는 PC를 넘어가지 않는다. 넘어가는 것은 git 에 올린 것뿐이다.
 
-1. **백엔드** — `git fetch --prune` 후 `git switch feat/participant-api` · `git pull`. 남아 있는 옛 로컬 브랜치 `feat/participant-log` 는 `git branch -d feat/participant-log` (PR #2 로 머지 완료)
-2. **프론트** — `git switch main` 후 `git pull` (2026-10-27 PR #2 로 §3.1 답코드 예시·문서 정정이 들어갔고, §6 계약은 별도 PR)
+1. **백엔드** — `git fetch --prune` 후 F6-3 PR 이 **머지 전이면** `git switch feat/participant-api` · `git pull`, **머지 후면** `git switch main` · `git pull` 하고 F6-4 브랜치를 새로 딴다. 남아 있는 옛 로컬 브랜치 `feat/participant-log` 는 `git branch -d feat/participant-log` (PR #2 로 머지 완료)
+2. **프론트** — `git switch main` 후 `git pull` (§6 `POST /participants` 계약 PR #3 · 주소 버전 제거 PR #4 까지 main 에 있다)
 3. **그 PC 의 준비** — 아래 F6-1 표에서 ⬜ 인 것부터(계정 · `.env`, `NEWBEEZ_DDL_AUTO=update` 포함). `bootRun` 이 404 까지 가면 그 PC 의 DB 에도 `participant_logs` 가 생긴 것이다 — Workbench `SHOW CREATE TABLE participant_logs;` 가 아래 SQL 과 같은지 본다
 4. **IntelliJ 를 쓰면 두 가지를 먼저 본다** — `.idea` 는 git 이 무시해서 PC마다 설정이 다르다
    - **Project SDK 가 21 인가** (File → Project Structure → Project → SDK). `jun98` PC 에는 실험판 `valhalla-ea-23` 이 잡혀 있었다 → 2026-10-16 `ms-21` (21.0.11) 로 바꿈
    - **실행은 상단 드롭다운의 `NewbeezBackApplication`(Spring Boot) ▶** — Gradle 실행 설정은 task 칸이 비어 있으면 `> Task :help` 만 돌고 앱이 안 켜진다
-5. **F6-3** 을 이어간다 — 아래 "F6-3" 절의 진행 표에서 ⬜ 인 첫 단계부터
+5. **F6-3 PR 이 머지됐는지** 확인하고 → **F6-4** 를 시작한다(아래 F6-4 절). F6-3 의 기록은 아래 "F6-3" 절
 6. ⚠️ **Claude 의 메모리는 PC마다 따로다** — 다른 PC가 알아야 할 결론은 이 파일과 프론트 문서에 옮겨 둔다 (F7 설계 확정 2026-10-20 · F6-2 의 패키지 구조 결정). 학습 진행 방식은 [CLAUDE.md](CLAUDE.md) 에 적었다
 
 ---
@@ -53,7 +53,7 @@
 | --- | --- | --- |
 | **F6-1** | **DB 설정** — `application.yml` + 환경변수 접속 → `bootRun` 성공 | ✅ `44e2283` |
 | **F6-2** | `participant_logs` 엔티티 + Repository + 테스트 | ✅ PR #2 `5559dd6` (2026-10-27) |
-| **F6-3** | `POST /api/participants` — 4계층 첫 관통 | 🟡 **진행 중** (`feat/participant-api`) |
+| **F6-3** | `POST /api/participants` — 4계층 첫 관통 | ✅ 2026-10-29 구현·테스트 완료 · **PR 대기** (`feat/participant-api`) |
 | F6-4 | `GET /api/participants/count` + **1분 캐시** + **임계값은 서버에서** | ⬜ |
 | F6-5 | **CORS** — 브라우저가 직접 부르는 두 엔드포인트만 | ⬜ |
 | **F6.5** | **Flyway 전환** — `V1__participant_logs.sql` · `ddl-auto` 는 `validate` 고정 | ⬜ **배포 전** (2026-10-27 F7 앞에서 배포 앞으로 이동) |
@@ -120,7 +120,7 @@
 **코드는 `participant/` 폴더가 원본이다.** 여기에 코드 사본을 두지 않는다.
 - [`ParticipantLog.java`](src/main/java/com/newbeez/newbeezback/participant/ParticipantLog.java) — 엔티티 · 5칸 + 생성자 2개 + getter 5개
 - [`ParticipantLogRepository.java`](src/main/java/com/newbeez/newbeezback/participant/ParticipantLogRepository.java) — `JpaRepository<ParticipantLog, Long>` 를 상속만 하는 빈 interface. 구현 객체는 Spring Data JPA 가 실행 시 만든다
-- [`ParticipantLogRepositoryTest.java`](src/test/java/com/newbeez/newbeezback/participant/ParticipantLogRepositoryTest.java) — `@SpringBootTest` 로 앱을 띄워 로컬 MySQL 에 실제로 저장 · `save` 전후 `getId()` (null → 번호) 검증 + `createdAt` 출력 · `@Transactional` 로 끝나면 롤백
+- `ParticipantLogRepositoryTest.java` — **2026-10-29 삭제** (`6489263`). `save` 전후 `getId()`(null → 번호)를 보던 테스트인데, F6-3 Controller 테스트 ①이 HTTP 부터 DB 까지 같은 것을 확인하고 "save 하면 id 가 생긴다"는 우리 코드가 아니라 JPA 의 동작이라서. 내용은 `git show e8b1d13:src/test/java/com/newbeez/newbeezback/participant/ParticipantLogRepositoryTest.java`
 
 **만들어지는 테이블** — 칸이 알파벳순으로 나오는 것은 정상이다. F6.5 에서 Flyway `V1__participant_logs.sql` 로 옮긴다
 
@@ -146,10 +146,10 @@ create index idx_created on participant_logs (created_at);
 - ⚠️ **테스트는 로컬 DB `newbeez` 에 실제로 붙는다**(`bootRun` 과 같은 DB). `@Transactional` 이 있어 행은 남지 않지만 **auto_increment 번호는 소비된다** — 롤백·`DELETE` 로 되돌아가지 않으므로 id 에 빈 번호가 생기는 게 정상이다. 참여자 수는 `COUNT(*)` 로 세고 `MAX(id)` 로 세지 않는다
 - ⚠️ **Spring 은 테스트 트랜잭션의 시작·롤백을 기본 로그(INFO)에 찍지 않는다** — 롤백은 Workbench 에서 실행 전후 `COUNT(*)` 가 같은지로 확인한다(2026-10-27 · 2/2 → id 3·4 출력 → 2/2)
 - ⚠️ **`@SpringBootTest` 없이 `@Autowired` 를 쓰면 IntelliJ 가 빨간 밑줄**(`Autowired members must be defined in valid Spring bean`)을 띄운다 — 컴파일 오류가 아니라 Spring 검사 경고다. 실행하면 필드가 `null` 로 남아 `expected: not <null>` 로 실패한다(2026-10-26 일부러 확인)
-- ⚠️ **통과한 테스트는 콘솔에 아무것도 안 찍는다** — `println` 출력과 Spring 로그는 `build/test-results/test/*.xml` · `build/reports/tests/test/index.html` 에 있다. 실행은 `./gradlew test --tests "com.newbeez.newbeezback.participant.ParticipantLogRepositoryTest"`
+- ⚠️ **통과한 테스트는 콘솔에 아무것도 안 찍는다** — `println` 출력과 Spring 로그는 `build/test-results/test/*.xml` · `build/reports/tests/test/index.html` 에 있다. 한 클래스만 실행은 `./gradlew test --tests "com.newbeez.newbeezback.participant.ParticipantLogControllerTest"`
 - ⚠️ **코드가 그대로면 Gradle 이 테스트를 건너뛴다**(`UP-TO-DATE`) — 그래도 `BUILD SUCCESSFUL` 이 뜬다. 마지막 줄 `N actionable tasks` 에 `executed` 가 있는지 보고, 다시 돌리려면 `--rerun` 을 붙인다. IntelliJ 에서 고친 파일은 **저장해야** Gradle 이 본다
 
-### 🟡 F6-3 `POST /api/participants` — 진행 중 (브랜치 `feat/participant-api`)
+### ✅ F6-3 `POST /api/participants` — 2026-10-29 구현 완료 · PR 대기 (브랜치 `feat/participant-api`)
 
 **주소에 버전을 넣지 않는다** (2026-10-28 · 프론트 ARCHITECTURE §6) — 베이스 `/api`. 깨지는 변경은 백엔드를 먼저 배포해 옛 모양·새 모양을 둘 다 지원 → 프론트 배포 → 옛 모양 제거 순서로 한다.
 
@@ -174,23 +174,32 @@ create index idx_created on participant_logs (created_at);
 | 4 | 요청 DTO `record` (`@NotBlank` · `@Pattern`) | 사용자 | ✅ 2026-10-27 `ee6cd41` — 컴파일 · `javap` 로 생성 멤버와 검사 애노테이션 확인 |
 | 5 | Service — 생성자 주입 · `@Transactional`(정상 종료 = 커밋) · 답코드 정리 | 사용자 | ✅ 2026-10-28 `bc7bded` — 테스트로 앱이 떠서 Service 빈 생성 확인. `@Transactional` 은 지금 `save` 하나라 결과가 같지만 작업 단위 표시로 붙임(2026-10-28 결정) |
 | 6 | Controller — `@PostMapping` · `@ResponseStatus(CREATED)` · `@Valid @RequestBody` | 사용자 | ✅ 2026-10-28 `a311e25` — `compileJava`(1 executed · `.class` 시각 확인) · `bootRun` 후 `http/participants.http` 6건: 201·201·201·400·400·405 · DB 9~11번 행(답코드 `032102223` / `NULL` / `NULL` — `IS NULL` 로 확인) · slug 틀림·깨진 JSON 은 행 없음 · GET 은 `Allow: POST` |
-| **7** | 테스트 — `@SpringBootTest` + `@AutoConfigureMockMvc` + `MockMvcTester` + `@Transactional` **← 진행 중** | 사용자 | 🟡 아래 "7단계 세부" — 위 6건을 테스트 코드로 · `./gradlew test` |
-| 8 | HANDOFF 정리 · PR | Claude | ⬜ |
+| 7 | 테스트 — `@SpringBootTest` + `@AutoConfigureMockMvc` + `MockMvcTester` + `@Transactional` | 사용자 | ✅ 2026-10-29 `e8b1d13` — 위 6건을 테스트 6개로 · `./gradlew test` 7건 통과(Controller 6 · contextLoads 1). F6-2 의 Repository 테스트는 중복이라 삭제(`6489263`) |
+| 8 | HANDOFF 정리 · push · PR 초안 | Claude | ✅ 2026-10-29 — PR 생성·머지는 사용자(웹). 프론트 문서는 고칠 곳 없음(§6 계약이 구현·테스트와 일치) |
 
-**7단계 세부** (2026-10-28 · 다른 PC 에서는 "← 다음" 부터)
+**7단계 세부** (2026-10-28 계획 · 2026-10-29 완료)
 
 | | 할 일 | 검증 |
 | --- | --- | --- |
 | 7-1 | 테스트 클래스 뼈대 `src/test/.../participant/ParticipantLogControllerTest.java` — 애노테이션 3개 + `MockMvcTester`·Repository 필드 주입 | ✅ `ca87577` 코드 읽기 |
-| **7-2** | ① 정상 → 201 · 답코드 `032102223` 저장 **← 다음** | 테스트 실행 |
-| 7-3 | ② 답코드 없음 · ③ 답코드 `"abc"` → 201 · `NULL` 저장 | 테스트 실행 |
-| 7-4 | ④ slug 틀림 · ⑤ 깨진 JSON → 400 · ⑥ GET → 405 + `Allow: POST` — 행 수 그대로 | 테스트 실행 |
-| 7-5 | (선택) `@Valid` 를 잠깐 지워 ④ 가 실패하는지 보고 되돌린다 — 테스트가 정말 잡아내는지 | 실패해야 정상 |
+| 7-2 | ① 정상 → 201 · 답코드 `032102223` 저장 | ✅ `e8b1d13` 테스트 1개 통과 |
+| 7-3 | ② 답코드 없음 · ③ 답코드 `"abc"` → 201 · `NULL` 저장 — `normalizeAnswerCode` 의 두 조건(`null` · 형식)을 하나씩 | ✅ `e8b1d13` 3개 통과 |
+| 7-4 | ④ slug 틀림 · ⑤ 깨진 JSON → 400 — 행 수 그대로 · ⑥ GET → 405 + `Allow: POST` | ✅ `e8b1d13` 6개 통과 |
+| 7-5 | (선택) `@Valid` 를 잠깐 지워 ④ 가 실패하는지 보고 되돌린다 — 테스트가 정말 잡아내는지 | ⏭ 건너뜀 (2026-10-29 사용자 결정) |
 
 - 6건은 `http/participants.http` 와 같다 — 테스트 메서드 하나 = 요청 하나
 - **기존 행에 기대지 않는다** — 로컬 DB 마다 행이 다르다. 행 수는 `repository.count()` 전후 차이로, 방금 저장한 행은 `repository.findAll(Sort.by(Sort.Direction.DESC, "id")).getFirst()` 로 본다
 - 확인한 API (jar · spring-test 7.0.8 · AssertJ 3.27.7): `assertThat(mvc.post().uri("/api/participants").contentType(MediaType.APPLICATION_JSON).content("""…"""))` 가 요청을 실행하고 `.hasStatus(HttpStatus.CREATED)` · `.headers().hasValue("Allow", "POST")` 로 검사한다. `assertThat` 은 `org.assertj.core.api.Assertions`
 - 실행 `./gradlew test --tests com.newbeez.newbeezback.participant.ParticipantLogControllerTest` (MySQL 필요) — `BUILD SUCCESSFUL` 대신 `build/test-results/test/TEST-…ParticipantLogControllerTest.xml` 의 tests·failures·시각으로 확인
+
+**7단계에서 알게 된 것** (2026-10-29)
+
+- ⚠️ **IntelliJ 의 빨간 표시는 판정 기준이 아니다** — 7-2 에서 편집기가 빨간 표시를 띄웠지만 `compileTestJava` 는 성공했다(메시지는 확인 안 함 — IntelliJ 2025.2 의 Spring 검사가 Boot 4 의 새 `@AutoConfigureMockMvc` 패키지를 몰라 띄우는 "Could not autowire" 로 추정). `jun98` PC 에서 괄호가 빨간 것은 ColorBrackets 플러그인 색이다. 판정은 Gradle 출력과 결과 xml 로 한다
+- **MockMvc 의 400 응답은 본문이 비어 있다** — 실제 서버의 `{timestamp, status, …}` 는 Spring Boot 가 `/error` 로 넘겨서 만든 것이고 MockMvc 는 넘기지 않는다. 계약도 상태 코드만 약속하므로 본문은 검사하지 않는다
+- **테스트 메서드 순서는 보장되지 않는다** — 실제로 작성 순서와 다르게 돌았다. 테스트마다 롤백 + 전후 차이로 비교하므로 순서와 무관하게 통과한다. 첫 테스트만 약 1.5초(첫 요청 준비), 나머지는 약 0.02초
+- **앱은 테스트 설정 조합 수만큼 뜬다** — `@SpringBootTest` 만 붙은 클래스끼리는 앱 하나를 공유하고, `@AutoConfigureMockMvc` 가 붙은 클래스는 따로 띄운다. 결과 xml 의 `HikariPool-N - Start completed` 줄로 확인했다(풀 2개)
+- ⚠️ **결과는 컴파일된 시점의 코드에 대한 것이다** — 소스를 고친 뒤에는 `build/classes/java/test/…/*.class` 시각이 소스 저장 시각보다 나중인지 본다(7-4 에서 한 번 어긋나 다시 돌림)
+- IntelliJ 는 텍스트 블록 안에서도 `{` 를 치면 `}` 를 자동으로 넣는다 — 일부러 깨뜨린 JSON(⑤)은 친 뒤 확인한다
 
 - ⚠️ **PowerShell 에서 `curl` 은 `Invoke-WebRequest` 의 별칭이다** — `curl.exe` 로 쳐야 한다. 게다가 **Windows PowerShell 5.1 은 `curl.exe` 같은 프로그램에 넘기는 인자에서 큰따옴표를 지운다** — `-d '{"categorySlug":"football"}'` 가 `{categorySlug:football}` 로 넘어가 400 이 된다(측정). **JSON 요청은 `http/participants.http`(IntelliJ HTTP Client · 요청 옆 ▶)로 보낸다.** Postman CLI 도 이 PC 에 있다
 - Spring Boot 4.1 의 테스트 애노테이션 패키지가 바뀌었다 — `@AutoConfigureMockMvc` 는 `org.springframework.boot.webmvc.test.autoconfigure` (jar 에서 확인). JUnit 은 **Jupiter 6.0.3**(JUnit 6)
