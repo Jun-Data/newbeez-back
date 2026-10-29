@@ -7,7 +7,7 @@
 > - 작업 규칙(역할·커밋·스택 주의점) → [CLAUDE.md](CLAUDE.md)
 > - 프론트 진행 상황 → 프론트 레포 `HANDOFF.md`
 
-**마지막 업데이트: 2026-10-29** — **F6-3 완료**(PR #3·#4·#5 · `8e640af`). **F6-4 시작** — 계약 결정(임계값 없음 · 카테고리별 · `{ "count": N }`) → 다음은 아래 F6-4 절 진행 표의 **1단계(프론트 문서 PR)**. F6-2 완료(PR #2 머지 · `5559dd6`). **F7 설계는 2026-10-20 확정**(이미지 없음 · `team_results` 전부 수동 시드) · Flyway 는 첫 배포 전 F6.5 → 아래 F6.5·F7 절 · 프론트 ARCHITECTURE §5.1·§6·§7 · `docs/LEGAL.md`
+**마지막 업데이트: 2026-10-29** — **F6-3 완료**(PR #3·#4·#5 · `8e640af`). **F6-4 시작** — 계약 결정(임계값 없음 · 카테고리별 · `{ "count": N }`) → 계약은 프론트 PR #5 로 머지(`a367779`) → 다음은 아래 F6-4 절 진행 표의 **2단계(Repository)**. F6-2 완료(PR #2 머지 · `5559dd6`). **F7 설계는 2026-10-20 확정**(이미지 없음 · `team_results` 전부 수동 시드) · Flyway 는 첫 배포 전 F6.5 → 아래 F6.5·F7 절 · 프론트 ARCHITECTURE §5.1·§6·§7 · `docs/LEGAL.md`
 🔀 **작업은 브랜치 `feat/participant-count` 에 있다**(F6-4) — `main` 에는 F6-3 까지 병합됐다(PR #1~#5 · 2026-10-29 `8e640af`). `main` 에 직접 커밋·push 하지 않는다 — PR 로만
 
 ### ▶ 다른 PC에서 이어갈 때
@@ -15,7 +15,7 @@
 대화 기록과 `.env`·DB 는 PC를 넘어가지 않는다. 넘어가는 것은 git 에 올린 것뿐이다.
 
 1. **백엔드** — `git fetch --prune` 후 `git switch feat/participant-count` · `git pull`. 남아 있는 옛 로컬 브랜치 `feat/participant-log` · `feat/participant-api` 는 `git branch -d` 로 지운다 (PR #2 · #5 로 머지 완료)
-2. **프론트** — `git switch main` 후 `git pull` (§6 `POST /participants` 계약 PR #3 · 주소 버전 제거 PR #4 까지 main 에 있다)
+2. **프론트** — `git switch main` 후 `git pull` (§6 `POST /participants` 계약 PR #3 · 주소 버전 제거 PR #4 · 참여자 수 계약 PR #5 까지 main 에 있다)
 3. **그 PC 의 준비** — 아래 F6-1 표에서 ⬜ 인 것부터(계정 · `.env`, `NEWBEEZ_DDL_AUTO=update` 포함). `bootRun` 이 404 까지 가면 그 PC 의 DB 에도 `participant_logs` 가 생긴 것이다 — Workbench `SHOW CREATE TABLE participant_logs;` 가 아래 SQL 과 같은지 본다
 4. **IntelliJ 를 쓰면 두 가지를 먼저 본다** — `.idea` 는 git 이 무시해서 PC마다 설정이 다르다
    - **Project SDK 가 21 인가** (File → Project Structure → Project → SDK). `jun98` PC 에는 실험판 `valhalla-ea-23` 이 잡혀 있었다 → 2026-10-16 `ms-21` (21.0.11) 로 바꿈
@@ -221,7 +221,7 @@ create index idx_created on participant_logs (created_at);
 | | 할 일 | 누가 | 검증 |
 | --- | --- | --- | --- |
 | 0 | 브랜치 `feat/participant-count` + 이 HANDOFF 갱신 | Claude | ✅ |
-| 1 | 계약 → 프론트 §4.3 · §6 · §9 #2 + 프론트 HANDOFF → 프론트 `docs/participant-count-contract` PR | Claude | 🟡 커밋까지 · 승인 후 push·PR |
+| 1 | 계약 → 프론트 §4.3 · §6 · §9 #2 + 프론트 HANDOFF → 프론트 `docs/participant-count-contract` PR | Claude | ✅ 프론트 PR #5 (2026-10-29 · `a367779`) |
 | 2 | Repository — `category_slug` 로 거른 수 세기 | 사용자 | ⬜ |
 | 3 | Service — 세기 (캐시 없이) | 사용자 | ⬜ |
 | 4 | Controller — `GET` · 쿼리 검사 · `{ count }` 응답 | 사용자 | ⬜ |
