@@ -7,8 +7,8 @@
 > - 작업 규칙(역할·커밋·스택 주의점) → [CLAUDE.md](CLAUDE.md)
 > - 프론트 진행 상황 → 프론트 레포 `HANDOFF.md`
 
-**마지막 업데이트: 2026-10-29** — **F6-3 완료**(PR #3·#4·#5 · `8e640af`). **F6-4 시작** — 계약 결정(임계값 없음 · 카테고리별 · `{ "count": N }`) → 계약은 프론트 PR #5 로 머지(`a367779`) → 다음은 아래 F6-4 절 진행 표의 **2단계(Repository)**. F6-2 완료(PR #2 머지 · `5559dd6`). **F7 설계는 2026-10-20 확정**(이미지 없음 · `team_results` 전부 수동 시드) · Flyway 는 첫 배포 전 F6.5 → 아래 F6.5·F7 절 · 프론트 ARCHITECTURE §5.1·§6·§7 · `docs/LEGAL.md`
-🔀 **작업은 브랜치 `feat/participant-count` 에 있다**(F6-4) — `main` 에는 F6-3 까지 병합됐다(PR #1~#5 · 2026-10-29 `8e640af`). `main` 에 직접 커밋·push 하지 않는다 — PR 로만
+**마지막 업데이트: 2026-10-30** — **F6-4 2~5단계 완료** — `GET /api/participants/count` 가 캐시 없이 동작한다(`.http` 로 200 `{"count": 6}` → POST → `7` · 400 세 경우 확인). 다음은 아래 F6-4 절 진행 표의 **6단계(캐시)** — ⏳ **캐시 시간(1분 유지 / 10초) 사용자 결정 대기**. F6-3 완료(PR #3·#4·#5 · `8e640af`). F6-2 완료(PR #2 머지 · `5559dd6`). **F7 설계는 2026-10-20 확정**(이미지 없음 · `team_results` 전부 수동 시드) · Flyway 는 첫 배포 전 F6.5 → 아래 F6.5·F7 절 · 프론트 ARCHITECTURE §5.1·§6·§7 · `docs/LEGAL.md`
+🔀 **작업은 브랜치 `feat/participant-count` 에 있다**(F6-4) — `main` 에는 F6-3 + F6-4 시작 HANDOFF 까지 병합됐다(PR #1~#6 · PR #6 = `02194c0` 한 커밋 · 2026-10-29 `b7a8712`). 같은 브랜치로 이어서 작업하고 F6-4 끝에 PR 을 하나 더 연다. `main` 에 직접 커밋·push 하지 않는다 — PR 로만
 
 ### ▶ 다른 PC에서 이어갈 때
 
@@ -213,22 +213,35 @@ create index idx_created on participant_logs (created_at);
 - 응답 `200` · `{ "count": N }` — 칸 이름이 있는 객체
 - **`COUNT(*)` 를 매 요청 하지 말 것** — 바이럴로 수십만 행이 쌓이면 체감된다. **1분 캐시**(`@Cacheable`) · 카테고리마다 따로. 1분 늦게 갱신돼도 문제없다
 
-⚠️ **starter 만으로는 만료가 안 된다** — 기본 캐시(`ConcurrentMapCacheManager`)에는 TTL 기능이 없다(2026-10-06 jar 확인). `spring-boot-starter-cache` 와 함께 Caffeine 이 필요하다 — 의존성 이름·설정 키는 6단계에서 jar 로 확인
+⚠️ **starter 만으로는 만료가 안 된다** — 기본 캐시(`ConcurrentMapCacheManager`)에는 TTL 기능이 없다(2026-10-06 jar 확인). `spring-boot-starter-cache` 와 함께 Caffeine 이 필요하다
+- 2026-10-30 jar 확인: Boot 4.1.0 BOM 에 `spring-boot-starter-cache` · `caffeine` 3.2.4 가 있다(버전 안 씀). `spring-boot-cache` 가 `spring-context-support`(`CaffeineCacheManager`)를 끌고 온다
+- **Caffeine 이 없으면 에러 없이 기본 캐시로 조용히 대체된다** — Boot 의 `CaffeineCacheConfiguration` 이 `@ConditionalOnClass(Caffeine, CaffeineCacheManager)`. 그래서 6단계 측정은 "1분 동안 안 바뀌는지"에 더해 **"만료 뒤에 바뀌는지"** 까지 본다
+- 설정 키 `spring.cache.type` · `spring.cache.cache-names` · `spring.cache.caffeine.spec` — **4.0.0 jar 로 확인**(이 PC 에 4.1.0 이 아직 없음). 6-1 에서 4.1.0 을 받은 뒤 다시 확인
 ⚠️ **캐시가 테스트를 속일 수 있다(예상)** — 같은 앱 안에서 `POST` 뒤 `GET count` 를 하면 1분이 안 지나 옛 숫자가 나온다. 테스트 설계는 7단계에서 정한다
+⏳ **캐시 시간 재검토 중 (2026-10-30 · 사용자 결정 대기)** — "1분"은 정석이 아니라 설계 때 고른 값이다. DB `COUNT` 는 방문자 수와 무관하게 **분당 60 ÷ 캐시초** 번이라 10초여도 보호는 거의 같고(분당 6번 vs 1번) 숫자는 6배 신선하다. **10초로 가면 프론트 ARCHITECTURE §5(390행)·§6(418·464행)의 "1분"을 승인 받고 고친다.** 1분이면 문서는 그대로
 
-**진행 상황** (2026-10-29 · 캐시는 일부러 뒤에 — 캐시 없이 먼저 확인해 둬야 캐시의 효과가 보인다)
+**진행 상황** (2026-10-30 · 캐시는 일부러 뒤에 — 캐시 없이 먼저 확인해 둬야 캐시의 효과가 보인다)
 
 | | 할 일 | 누가 | 검증 |
 | --- | --- | --- | --- |
 | 0 | 브랜치 `feat/participant-count` + 이 HANDOFF 갱신 | Claude | ✅ |
 | 1 | 계약 → 프론트 §4.3 · §6 · §9 #2 + 프론트 HANDOFF → 프론트 `docs/participant-count-contract` PR | Claude | ✅ 프론트 PR #5 (2026-10-29 · `a367779`) |
-| 2 | Repository — `category_slug` 로 거른 수 세기 | 사용자 | ⬜ |
-| 3 | Service — 세기 (캐시 없이) | 사용자 | ⬜ |
-| 4 | Controller — `GET` · 쿼리 검사 · `{ count }` 응답 | 사용자 | ⬜ |
-| 5 | `http/participants.http` 에 요청 추가 — `POST` 하면 숫자가 바로 느는지 | 사용자 | ⬜ |
-| 6 | 캐시 — `build.gradle`(starter + Caffeine) · 설정 · `@Cacheable` → 1분 동안 숫자가 안 바뀌는지 | 사용자 | ⬜ |
+| 2 | Repository — `category_slug` 로 거른 수 세기 | 사용자 | ✅ `countByCategorySlug` · `test` 7건 (`fe0d6b1`) |
+| 3 | Service — 세기 (캐시 없이) | 사용자 | ✅ `count` + `@Transactional(readOnly = true)` · `compileJava` · javap (`a267df2`) |
+| 4 | Controller — `GET` · 쿼리 검사 · `{ count }` 응답 | 사용자 | ✅ `@RequestParam` + `@Pattern` · 응답 record `ParticipantCountResponse` · `test` 7건 (`1ee3d6b`) |
+| 5 | `http/participants.http` 에 요청 추가 — `POST` 하면 숫자가 바로 느는지 | Claude(파일) · 사용자(전송) | ✅ ⑦ 6 → ① → ⑦ 7 · ⑧⑨⑩ 400 (`6ed7317`) |
+| 6 | 캐시 — 6-1 `build.gradle`(starter + Caffeine) → 6-2 설정 · `@EnableCaching` → 6-3 `@Cacheable` → 캐시 시간 동안 안 바뀌고 **지나면 바뀌는지** | 사용자 | ⬜ ⏳ 캐시 시간 결정 대기 |
 | 7 | 테스트 | 사용자 | ⬜ |
 | 8 | HANDOFF 정리 · PR | Claude | ⬜ |
+
+**2~5단계에서 알게 된 것**
+
+- ⚠️ **허용 목록 `"football"` 이 두 곳에 있다** — DTO `ParticipantLogRequest`(POST) 와 Controller `count` 의 `@Pattern`. 카테고리를 추가할 때 같이 고친다
+- 쿼리 값 검사는 **매개변수에 `@Pattern` 을 직접** 붙인다(Spring 6.1+ 내장 메서드 검사 · Framework 7.0.8 jar 에서 `HandlerMethodValidationException` → 400 확인). **클래스 수준 `@Validated` 는 붙이지 않는다** — 다른 검사 경로(AOP)가 켜진다
+- `@RequestParam` 이 찾는 이름은 Java 매개변수 이름 — `-parameters` 로 컴파일돼 `.class` 에 `MethodParameters` 가 있다(javap 확인). **매개변수 이름이 곧 API 계약**
+- 400 응답 본문엔 이유가 없다(Boot 기본 오류 JSON: `status`·`error`·`path`). 어느 검사에 걸렸는지는 본문으로 구별 못 한다
+- `.http` 를 **"전체 실행"하면 전 → 행동 → 후 측정이 깨진다** — 값의 변화를 볼 땐 ▶ 를 하나씩. IntelliJ HTTP Client 는 `?categorySlug=` 를 `?categorySlug` 로 보낸다(로그 기준 · 400 은 같음)
+- `.http` 의 POST 는 롤백되지 않고 로컬 DB 에 쌓인다 — 2026-10-30 기준 football 7행
 
 ### ⬜ F6.5 Flyway (배포 전) + F7 `team_results` (배포·연동 뒤) — 설계 확정 (2026-10-20)
 
