@@ -1,5 +1,5 @@
 # 참여 기록 API 수동 확인 — IntelliJ HTTP Client (요청 왼쪽 ▶ 로 전송)
-# 계약 원본: 프론트 docs/ARCHITECTURE.md §6 `POST /participants`
+# 계약 원본: 프론트 docs/ARCHITECTURE.md §6 `POST /participants` · `GET /participants/count`
 # 앱을 먼저 켠다: ./gradlew bootRun
 
 ### ① 정상 → 201 · 행 추가 (answer_code = 032102223)
@@ -34,3 +34,18 @@ Content-Type: application/json
 
 ### ⑥ 없는 메서드 → 405
 GET http://localhost:8080/api/participants
+
+# ── 참여자 수 (F6-4) ──
+# 캐시를 붙이기 전에는 ⑦ → ① → ⑦ 순서로 보내면 숫자가 바로 1 늘어야 한다
+
+### ⑦ 정상 → 200 · {"count": N}
+GET http://localhost:8080/api/participants/count?categorySlug=football
+
+### ⑧ categorySlug 없음 → 400
+GET http://localhost:8080/api/participants/count
+
+### ⑨ 허용 목록 밖 → 400
+GET http://localhost:8080/api/participants/count?categorySlug=baseball
+
+### ⑩ 빈 값 → 400
+GET http://localhost:8080/api/participants/count?categorySlug=
