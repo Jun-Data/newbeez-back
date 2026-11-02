@@ -7,19 +7,21 @@
 > - 작업 규칙(역할·커밋·스택 주의점) → [CLAUDE.md](CLAUDE.md)
 > - 프론트 진행 상황 → 프론트 레포 `HANDOFF.md`
 
-**마지막 업데이트: 2026-10-30** — **F6-4 2~5단계 완료** — `GET /api/participants/count` 가 캐시 없이 동작한다(`.http` 로 200 `{"count": 6}` → POST → `7` · 400 세 경우 확인). 다음은 아래 F6-4 절 진행 표의 **6단계(캐시)** — ⏳ **캐시 시간(1분 유지 / 10초) 사용자 결정 대기**. F6-3 완료(PR #3·#4·#5 · `8e640af`). F6-2 완료(PR #2 머지 · `5559dd6`). **F7 설계는 2026-10-20 확정**(이미지 없음 · `team_results` 전부 수동 시드) · Flyway 는 첫 배포 전 F6.5 → 아래 F6.5·F7 절 · 프론트 ARCHITECTURE §5.1·§6·§7 · `docs/LEGAL.md`
+**마지막 업데이트: 2026-11-02 (노트북)** — **F6-4 2~5단계 완료** — `GET /api/participants/count` 가 캐시 없이 동작한다(`.http` 로 200 `{"count": 6}` → POST → `7` · 400 세 경우 확인). 다음은 아래 F6-4 절 진행 표의 **6단계(캐시 · 10초 — 2026-11-02 사용자 결정)**. F6-3 완료(PR #3·#4·#5 · `8e640af`). F6-2 완료(PR #2 머지 · `5559dd6`). **F7 설계는 2026-10-20 확정**(이미지 없음 · `team_results` 전부 수동 시드) · Flyway 는 첫 배포 전 F6.5 → 아래 F6.5·F7 절 · 프론트 ARCHITECTURE §5.1·§6·§7 · `docs/LEGAL.md`
 🔀 **작업은 브랜치 `feat/participant-count` 에 있다**(F6-4) — `main` 에는 F6-3 + F6-4 시작 HANDOFF 까지 병합됐다(PR #1~#6 · PR #6 = `02194c0` 한 커밋 · 2026-10-29 `b7a8712`). 같은 브랜치로 이어서 작업하고 F6-4 끝에 PR 을 하나 더 연다. `main` 에 직접 커밋·push 하지 않는다 — PR 로만
+📋 **F6-4 8단계(HANDOFF 정리) 때 함께 반영할 것** (노트북 2026-10-27·11-02 확인 · 반영하면 이 줄을 지운다) — ① 설명 정정: `created_at` 이 UTC 인 이유(드라이버가 아니라 Hibernate 가 UTC 달력을 붙여 넘김) · `@SpringBootTest` 없이 실행하면 `NullPointerException` · F6-2 테스트를 고른 이유(실제로는 INSERT 성공·id 만 봤다) ② 함정: `@Transactional` 테스트 안에서 다시 읽은 값은 DB 값이 아니다(`flush`·`clear` 뒤에 읽기) · 테스트 답코드는 프론트가 만들 수 있는 값으로 ③ 결정 대기: `createdAt` 초 단위 자르기 · F6.5 `V1` 의 `(category_slug, created_at)` 인덱스 ④ 낡은 줄: 모노레포 "재검토 중"(제안 시점 지남) · 임베드 실기기(아이폰 카톡 인앱은 사용자가 확인함) ⑤ 백엔드 CLAUDE.md 에 "main 직접 커밋 금지" 규칙 · "PC 를 떠날 때" 체크리스트 ⑥ 프론트에 남은 일: `BAD_CODES` 2개 교체(길이 검사 변이를 audit 가 못 잡음) · ARCHITECTURE §9 #3·#5·#6 · 노트북의 미커밋 바이에른 변경(사용자 결정 대기) ⑦ HANDOFF 줄이기 — 끝난 단계는 한두 줄 + PR 번호, 자세한 건 git 기록 (Claude Code 문서는 매 세션 읽히는 CLAUDE.md 를 200줄 이하로 권장)
 
 ### ▶ 다른 PC에서 이어갈 때
 
 대화 기록과 `.env`·DB 는 PC를 넘어가지 않는다. 넘어가는 것은 git 에 올린 것뿐이다.
 
-1. **백엔드** — `git fetch --prune` 후 `git switch feat/participant-count` · `git pull`. 남아 있는 옛 로컬 브랜치 `feat/participant-log` · `feat/participant-api` 는 `git branch -d` 로 지운다 (PR #2 · #5 로 머지 완료)
+1. **백엔드** — `git fetch --prune` 후 `git switch feat/participant-count` · `git pull`. 남아 있는 옛 로컬 브랜치 `feat/participant-log` · `feat/participant-api` 는 `git branch -d` 로 지운다 (PR #2 · #5 로 머지 완료) · ⚠️ **커밋 안 한 변경부터 치운다** — 원격에서 지운 파일(예: 2026-10-29 에 지운 `ParticipantLogRepositoryTest.java`)을 그 PC 에서 고치고 있었다면 `switch` 가 거부되지 않고 **그 파일을 새 브랜치로 조용히 들고 간다**(2026-11-02 노트북 재현). 먼저 커밋하거나 `git stash`
 2. **프론트** — `git switch main` 후 `git pull` (§6 `POST /participants` 계약 PR #3 · 주소 버전 제거 PR #4 · 참여자 수 계약 PR #5 까지 main 에 있다)
 3. **그 PC 의 준비** — 아래 F6-1 표에서 ⬜ 인 것부터(계정 · `.env`, `NEWBEEZ_DDL_AUTO=update` 포함). `bootRun` 이 404 까지 가면 그 PC 의 DB 에도 `participant_logs` 가 생긴 것이다 — Workbench `SHOW CREATE TABLE participant_logs;` 가 아래 SQL 과 같은지 본다
-4. **IntelliJ 를 쓰면 두 가지를 먼저 본다** — `.idea` 는 git 이 무시해서 PC마다 설정이 다르다
+4. **IntelliJ 를 쓰면 세 가지를 먼저 본다** — `.idea` 는 git 이 무시해서 PC마다 설정이 다르다
    - **Project SDK 가 21 인가** (File → Project Structure → Project → SDK). `jun98` PC 에는 실험판 `valhalla-ea-23` 이 잡혀 있었다 → 2026-10-16 `ms-21` (21.0.11) 로 바꿈
    - **실행은 상단 드롭다운의 `NewbeezBackApplication`(Spring Boot) ▶** — Gradle 실행 설정은 task 칸이 비어 있으면 `> Task :help` 만 돌고 앱이 안 켜진다
+   - **`build.gradle` 이 바뀌었으면 Gradle 창의 Sync All Gradle Projects** — 안 하면 새 라이브러리의 `import` 가 빨갛다. Gradle 은 그 PC 에서 쓴 것만 받아 두고 30일 안 쓴 캐시는 지운다(2026-11-02 노트북 캐시엔 validation 이 없었다)
 5. **F6-4** 를 이어간다 — 아래 "F6-4" 절의 진행 표에서 ⬜ 인 첫 단계부터
 6. ⚠️ **Claude 의 메모리는 PC마다 따로다** — 다른 PC가 알아야 할 결론은 이 파일과 프론트 문서에 옮겨 둔다 (F7 설계 확정 2026-10-20 · F6-2 의 패키지 구조 결정). 학습 진행 방식은 [CLAUDE.md](CLAUDE.md) 에 적었다
 
@@ -54,7 +56,7 @@
 | **F6-1** | **DB 설정** — `application.yml` + 환경변수 접속 → `bootRun` 성공 | ✅ `44e2283` |
 | **F6-2** | `participant_logs` 엔티티 + Repository + 테스트 | ✅ PR #2 `5559dd6` (2026-10-27) |
 | **F6-3** | `POST /api/participants` — 4계층 첫 관통 | ✅ PR #3·#4·#5 `8e640af` (2026-10-29) |
-| **F6-4** | `GET /api/participants/count?categorySlug=` + **1분 캐시** (임계값 없음 · 2026-10-29) | 🟡 **진행 중** (`feat/participant-count`) |
+| **F6-4** | `GET /api/participants/count?categorySlug=` + **10초 캐시** (임계값 없음 · 2026-10-29 · 10초는 2026-11-02) | 🟡 **진행 중** (`feat/participant-count`) |
 | F6-5 | **CORS** — 브라우저가 직접 부르는 두 엔드포인트만 | ⬜ |
 | **F6.5** | **Flyway 전환** — `V1__participant_logs.sql` · `ddl-auto` 는 `validate` 고정 | ⬜ **배포 전** (2026-10-27 F7 앞에서 배포 앞으로 이동) |
 | **D1** | **첫 배포** — Dockerfile · 운영 MySQL 8.4 · 환경변수 · 유휴 회수 없는 호스팅 | ⬜ 2026-10-27 추가 |
@@ -74,11 +76,11 @@
 
 | | `jun98` (데스크톱) | `이현준` |
 | --- | --- | --- |
-| MySQL | ✅ 8.0.46 (`MySQL80`) | `MySQL80` |
+| MySQL | ✅ 8.0.46 (`MySQL80`) | ✅ 8.0.46 (`MySQL80` · 2026-11-02 실행 중 확인) |
 | DB `newbeez` | ✅ | ✅ (2026-09-04 기록) |
-| 앱 전용 계정 `newbeez` | ✅ | ⬜ |
-| `.env` | ✅ | ⬜ |
-| `.env` 의 `NEWBEEZ_DDL_AUTO=update` | ✅ (2026-10-14) | ⬜ |
+| 앱 전용 계정 `newbeez` | ✅ | ✅ (2026-10-20 `bootRun` 접속 성공) |
+| `.env` | ✅ | ✅ (2026-10-20 · 2026-11-02 있음 확인) |
+| `.env` 의 `NEWBEEZ_DDL_AUTO=update` | ✅ (2026-10-14) | ✅ (2026-10-20 · `SHOW CREATE TABLE` 이 아래 SQL 과 같음) |
 
 **⬜ 인 PC에서 할 일**
 
@@ -211,14 +213,16 @@ create index idx_created on participant_logs (created_at);
 - **임계값 없음** (2026-10-29 사용자 결정 — 2026-10-27 "서버가 숨긴다"를 뒤집음) — 0 이어도 그대로 돌려준다
 - **카테고리별** — 쿼리 `categorySlug` 필수 · `POST` 와 같은 허용 목록(`football`) · 어기면 400. 전체 수(`repository.count()`)가 아니라 `category_slug` 로 거른 수를 센다
 - 응답 `200` · `{ "count": N }` — 칸 이름이 있는 객체
-- **`COUNT(*)` 를 매 요청 하지 말 것** — 바이럴로 수십만 행이 쌓이면 체감된다. **1분 캐시**(`@Cacheable`) · 카테고리마다 따로. 1분 늦게 갱신돼도 문제없다
+- **`COUNT(*)` 를 매 요청 하지 말 것** — 바이럴로 수십만 행이 쌓이면 체감된다. **10초 캐시**(`@Cacheable`) · 카테고리마다 따로. 10초 늦게 갱신돼도 문제없다
 
 ⚠️ **starter 만으로는 만료가 안 된다** — 기본 캐시(`ConcurrentMapCacheManager`)에는 TTL 기능이 없다(2026-10-06 jar 확인). `spring-boot-starter-cache` 와 함께 Caffeine 이 필요하다
 - 2026-10-30 jar 확인: Boot 4.1.0 BOM 에 `spring-boot-starter-cache` · `caffeine` 3.2.4 가 있다(버전 안 씀). `spring-boot-cache` 가 `spring-context-support`(`CaffeineCacheManager`)를 끌고 온다
-- **Caffeine 이 없으면 에러 없이 기본 캐시로 조용히 대체된다** — Boot 의 `CaffeineCacheConfiguration` 이 `@ConditionalOnClass(Caffeine, CaffeineCacheManager)`. 그래서 6단계 측정은 "1분 동안 안 바뀌는지"에 더해 **"만료 뒤에 바뀌는지"** 까지 본다
-- 설정 키 `spring.cache.type` · `spring.cache.cache-names` · `spring.cache.caffeine.spec` — **4.0.0 jar 로 확인**(이 PC 에 4.1.0 이 아직 없음). 6-1 에서 4.1.0 을 받은 뒤 다시 확인
-⚠️ **캐시가 테스트를 속일 수 있다(예상)** — 같은 앱 안에서 `POST` 뒤 `GET count` 를 하면 1분이 안 지나 옛 숫자가 나온다. 테스트 설계는 7단계에서 정한다
-⏳ **캐시 시간 재검토 중 (2026-10-30 · 사용자 결정 대기)** — "1분"은 정석이 아니라 설계 때 고른 값이다. DB `COUNT` 는 방문자 수와 무관하게 **분당 60 ÷ 캐시초** 번이라 10초여도 보호는 거의 같고(분당 6번 vs 1번) 숫자는 6배 신선하다. **10초로 가면 프론트 ARCHITECTURE §5(390행)·§6(418·464행)의 "1분"을 승인 받고 고친다.** 1분이면 문서는 그대로
+- **Caffeine 이 없으면 에러 없이 기본 캐시로 조용히 대체된다** — Boot 의 `CaffeineCacheConfiguration` 이 `@ConditionalOnClass(Caffeine, CaffeineCacheManager)`. 그래서 6단계 측정은 "10초 동안 안 바뀌는지"에 더해 **"만료 뒤에 바뀌는지"** 까지 본다
+- 설정 키 `spring.cache.type` · `spring.cache.cache-names` · `spring.cache.caffeine.spec` — **4.0.0 jar 로 확인**(이 PC 에 4.1.0 이 아직 없음). 6-1 에서 4.1.0 을 받은 뒤 다시 확인 → ✅ **2026-11-02 노트북이 4.1.0 jar(Maven Central · sha1 일치)로 확인 — 세 키 그대로**
+- **조용한 실패 두 가지를 막는다** (2026-11-02 노트북 · 4.1.0 바이트코드 확인) — ① `spring.cache.type: caffeine` 을 적어 두면 Caffeine 이 빠졌을 때 기본 캐시로 바뀌지 않고 앱이 기동에서 멈춘다(`No cache manager could be auto-configured, check your configuration (caching type is 'CAFFEINE')`) ② `@EnableCaching` 이 없으면 캐시 자동 설정 전체가 꺼지고(`@ConditionalOnBean(CacheAspectSupport)`) `@Cacheable` 은 오류 없이 무시된다
+- **`@Cacheable(sync = true)`** — 만료 순간 동시에 들어온 요청이 전부 `COUNT` 를 돌리는 것(캐시 쇄도)을 하나로 줄인다. 측정은 ⑦ 을 몇 초 간격으로 **계속** 보내며 10초 뒤 바뀌는지 본다 — `expireAfterAccess` 로 잘못 쓰면 계속 보내는 동안 영영 안 바뀐다
+⚠️ **캐시가 테스트를 속일 수 있다(예상)** — 같은 앱 안에서 `POST` 뒤 `GET count` 를 하면 10초가 안 지나 옛 숫자가 나온다. 테스트 설계는 7단계에서 정한다. 또 **캐시는 롤백되지 않는다** — 테스트 트랜잭션 안에서 센 숫자가 캐시에 남아 다음 테스트로 넘어간다 → 테스트마다 시작 전에 캐시를 비운다(2026-11-02 노트북)
+✅ **캐시 시간 10초 (2026-11-02 사용자 결정)** — "1분"은 정석이 아니라 설계 때 고른 값이었다. DB `COUNT` 는 방문자 수와 무관하게 분당 60 ÷ 10 = **최대 6번**(`sync = true` 기준)이고, 숫자는 최대 10초 늦다. 프론트 ARCHITECTURE §5·§6 의 "1분" 3곳은 프론트 PR `docs/participant-count-cache-10s` 로 고친다
 
 **진행 상황** (2026-10-30 · 캐시는 일부러 뒤에 — 캐시 없이 먼저 확인해 둬야 캐시의 효과가 보인다)
 
@@ -230,7 +234,7 @@ create index idx_created on participant_logs (created_at);
 | 3 | Service — 세기 (캐시 없이) | 사용자 | ✅ `count` + `@Transactional(readOnly = true)` · `compileJava` · javap (`a267df2`) |
 | 4 | Controller — `GET` · 쿼리 검사 · `{ count }` 응답 | 사용자 | ✅ `@RequestParam` + `@Pattern` · 응답 record `ParticipantCountResponse` · `test` 7건 (`1ee3d6b`) |
 | 5 | `http/participants.http` 에 요청 추가 — `POST` 하면 숫자가 바로 느는지 | Claude(파일) · 사용자(전송) | ✅ ⑦ 6 → ① → ⑦ 7 · ⑧⑨⑩ 400 (`6ed7317`) |
-| 6 | 캐시 — 6-1 `build.gradle`(starter + Caffeine) → 6-2 설정 · `@EnableCaching` → 6-3 `@Cacheable` → 캐시 시간 동안 안 바뀌고 **지나면 바뀌는지** | 사용자 | ⬜ ⏳ 캐시 시간 결정 대기 |
+| 6 | 캐시 — 6-1 `build.gradle`(starter + Caffeine) → 6-2 설정 · `@EnableCaching` → 6-3 `@Cacheable` → 캐시 시간 동안 안 바뀌고 **지나면 바뀌는지** | 사용자 | ⬜ **← 다음** (10초 · 2026-11-02 결정) |
 | 7 | 테스트 | 사용자 | ⬜ |
 | 8 | HANDOFF 정리 · PR | Claude | ⬜ |
 
