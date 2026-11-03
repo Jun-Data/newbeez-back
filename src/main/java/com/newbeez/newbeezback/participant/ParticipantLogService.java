@@ -1,5 +1,6 @@
 package com.newbeez.newbeezback.participant;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,12 @@ public class ParticipantLogService {
                 request.resultSlug(),
                 normalizeAnswerCode(request.answerCode()));
         repository.save(log);
+    }
+
+    @Cacheable(cacheNames = "participantCount", sync = true)
+    @Transactional(readOnly = true)
+    public long count(String categorySlug) {
+        return repository.countByCategorySlug(categorySlug);
     }
 
     // 범용 형식(숫자 1~32자)만 본다 - 틀리면 null로 바꾸고 기록은 남긴다

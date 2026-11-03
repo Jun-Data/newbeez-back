@@ -92,4 +92,14 @@ GitHub `Jun-Data/newbeez-front` · 로컬 경로는 **PC마다 다르다.**
 - **`pnpm`·`gradlew` 등 실행은 사용자가 직접.** 앱 코드도 사용자가 타이핑한다 (Claude 는 설계·설명·git·문서 담당)
 - 무거운 인프라(인증·배포 자동화)는 명시적 요청 전엔 도입하지 않음
 - **커밋** gitmoji + Conventional: `:이모지: type: 요약`. `Co-Authored-By` 안 씀
+- 🚫 **`main` 에 직접 커밋·push 하지 않는다** (두 레포 모두) — 작업 브랜치에서 커밋하고 **PR 로만** 합친다. PR 은 사용자가 GitHub 웹에서 만들고 머지한다. push 는 사용자가 요청·승인할 때만, 브랜치 이름을 밝히고 한다. PR 은 슬라이스 끝에 한 번(중간 push 는 백업용)
 - Windows + 한글 경로 환경
+
+## PC 를 떠날 때
+
+대화 기록·`.env`·DB·Claude 메모리는 PC 를 넘어가지 않는다. **git 에 올린 것만 넘어간다.**
+
+1. 커밋 안 한 변경을 커밋하거나 `git stash` — 남겨 두면 그 PC 에만 있고, 나중에 그 PC 에서 `switch` 할 때 새 브랜치로 조용히 따라온다
+2. 작업 브랜치를 push (사용자 승인 · 백업용)
+3. [HANDOFF.md](HANDOFF.md) 의 "마지막 업데이트" 줄과 다음 할 일을 지금 상태로
+4. 대화에서 정한 결론은 HANDOFF·프론트 문서에 옮긴다 — 메모리는 PC마다 따로라 다른 PC 의 Claude 는 모른다

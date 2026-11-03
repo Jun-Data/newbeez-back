@@ -1,5 +1,5 @@
 # 참여 기록 API 수동 확인 — IntelliJ HTTP Client (요청 왼쪽 ▶ 로 전송)
-# 계약 원본: 프론트 docs/ARCHITECTURE.md §6 `POST /participants`
+# 계약 원본: 프론트 docs/ARCHITECTURE.md §6 `POST /participants` · `GET /participants/count`
 # 앱을 먼저 켠다: ./gradlew bootRun
 
 ### ① 정상 → 201 · 행 추가 (answer_code = 032102223)
@@ -34,3 +34,33 @@ Content-Type: application/json
 
 ### ⑥ 없는 메서드 → 405
 GET http://localhost:8080/api/participants
+
+# ── 참여자 수 (F6-4) ──
+# 캐시 전(5단계): ⑦ → ① → ⑦ 순서로 보내면 숫자가 바로 1 늘어야 한다
+# 캐시 후(6-3 · 10초): 맨 아래 ⑪ → ⑫ → ⑪ 을 10초 안에 — 아래 "캐시 확인" 참고
+
+### ⑦ 정상 → 200 · {"count": N}
+GET http://localhost:8080/api/participants/count?categorySlug=football
+
+### ⑧ categorySlug 없음 → 400
+GET http://localhost:8080/api/participants/count
+
+### ⑨ 허용 목록 밖 → 400
+GET http://localhost:8080/api/participants/count?categorySlug=baseball
+
+### ⑩ 빈 값 → 400
+GET http://localhost:8080/api/participants/count?categorySlug=
+
+# ── 캐시 확인 (F6-4 6-3 · 10초) — 버튼을 붙여 두려고 ⑦·① 을 한 번 더 둔다 ──
+# 1) ⑪ → ⑫ → ⑪ 을 10초 안에: 두 ⑪ 이 같은 숫자 = 캐시가 켜짐
+# 2) 이어서 ⑪ 을 2~3초 간격으로 계속: 첫 ⑪ 에서 10초가 지나면 1 늘어야 한다 = 만료 동작(expireAfterWrite)
+# 전체 실행 말고 ▶ 하나씩 · 시작 전에 앱을 새로 켜면 캐시가 비어 있다
+
+### ⑪ 참여자 수 (⑦ 과 같음) → 200
+GET http://localhost:8080/api/participants/count?categorySlug=football
+
+### ⑫ 참여 기록 하나 추가 (① 과 같음) → 201
+POST http://localhost:8080/api/participants
+Content-Type: application/json
+
+{"categorySlug": "football", "resultSlug": "man-city", "answerCode": "032102223"}
