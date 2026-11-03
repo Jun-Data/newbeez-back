@@ -1,6 +1,11 @@
 spring:
   application:
     name: newbeez-back
+  cache:
+    type: caffeine
+    cache-names: participantCount
+    caffeine:
+      spec: expireAfterWrite=10s
   config:
     import: "optional:file:.env[.properties]"
   datasource:
