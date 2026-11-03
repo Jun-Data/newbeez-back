@@ -1,14 +1,18 @@
 package com.newbeez.newbeezback.participant;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -22,6 +26,15 @@ class ParticipantLogControllerTest {
 
     @Autowired
     private ParticipantLogRepository repository;
+
+    @Autowired
+    private CacheManager cacheManager;
+
+    // 캐시는 테스트 롤백에 묶이지 않는다 - 앞 테스트가 센 숫자가 남지 않게 매번 비운다
+    @BeforeEach
+    void clearParticipantCountCache() {
+        Objects.requireNonNull(cacheManager.getCache("participantCount")).clear();
+    }
 
     @Test
     void valid_request_returns_201_and_saves_answer_code() {
