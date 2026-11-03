@@ -57,19 +57,29 @@
 - 대상은 **브라우저가 직접 부르는 두 엔드포인트**뿐 — `POST /api/participants` · `GET /api/participants/count`. `GET /results`(F7)는 Next 서버가 빌드 때 부르므로 CORS 불필요
 - `POST` 는 `application/json` 이라 브라우저가 **`OPTIONS` 사전 요청**을 먼저 보낸다 → `Content-Type` 헤더를 허용해야 한다. `GET count` 는 사용자 정의 헤더가 없는 단순 GET 이라 사전 요청이 없다(그래도 허락 헤더는 필요)
 - **CORS 는 브라우저가 검사하고 서버가 허락한다** — `.http`·MockMvc·curl 은 검사하지 않아서, 지금까지의 확인은 CORS 와 무관하게 통과했다. 측정은 `Origin` 헤더를 붙여 보내고 **응답 헤더**(`Access-Control-Allow-Origin`)를 본다
+- CORS 가 없으면 — `GET count` 는 서버가 정상 처리(200)하지만 브라우저가 답을 JS 에 숨긴다 → 참여자 수 줄이 빈다. **`POST` 는 사전 요청에서 멈춰 서버에 도착하지 않는다 → 참여 기록·답코드가 조용히 안 쌓인다**
 
 **jar 확인** (2026-11-03 · Framework 7.0.8 · Boot 4.1.0)
 - Boot 에는 MVC CORS 설정 키가 **없다**(`spring-boot-webmvc` 메타데이터에 `cors` 0개) → Java 설정 `WebMvcConfigurer.addCorsMappings(CorsRegistry)`
 - `registry.addMapping(경로)` 의 기본값(`applyPermitDefaultValues`): 출처 `*` · 메서드 `GET`·`HEAD`·`POST` · 헤더 `*` · `maxAge` 1800초 — **출처를 지정하지 않으면 모두 허용**이 된다
 - `CorsRegistration` 메서드: `allowedOrigins` · `allowedOriginPatterns` · `allowedMethods` · `allowedHeaders` · `exposedHeaders` · `allowCredentials` · `allowPrivateNetwork` · `maxAge`
+- **설정이 있는 경로에서 목록 밖 출처는 Spring 이 403 으로 돌려보낸다** — 본문 `Invalid CORS request` · 컨트롤러까지 가지 않는다(`DefaultCorsProcessor.handleInternal` → `rejectRequest`). 메서드·헤더가 목록 밖이어도 같다. "서버는 헤더만 붙이고 거절은 안 한다"는 설정이 **없는** 경로에서만 맞다
+- **`Origin` 헤더가 없는 요청은 CORS 요청이 아니라서 그대로 통과**한다(`isCorsRequest` false) — `.http`·curl·Next 서버(F7)는 영향 없음. CORS 는 남용 방어가 아니다
+- 설정이 없는 경로는 건너뛴다(`Skip: no CORS configuration has been provided`). 사전 요청은 Spring 이 대신 답하지만(`PreFlightHttpRequestHandler`) 허락 헤더가 없다 — 지금의 `POST` 상태
+- ⚠️ **`@EnableWebMvc` 를 붙이지 않는다** — `WebMvcConfigurer` 만 구현한다. 붙이면 Boot 의 MVC 자동 설정 전체가 꺼진다(`WebMvcAutoConfiguration` 의 `@ConditionalOnMissingBean(WebMvcConfigurationSupport)`)
+
+**결정** (2026-11-03 사용자 결정)
+- **허용 출처** — 지금은 `http://localhost:3000` 하나. 운영 프론트 주소는 D1 에서 환경변수에 **추가만** 한다(코드 변경 없음). `*` ✗ · `https://*.vercel.app` 패턴 ✗(남의 Vercel 사이트까지 열린다). 출처는 글자 하나까지 같아야 한다(끝 `/` ✗)
+- **값을 둘 곳** — 환경변수 `NEWBEEZ_CORS_ALLOWED_ORIGINS`(쉼표로 여러 개) → `application.yml` 의 `newbeez.cors.allowed-origins` · **기본값 없음** — 빠지면 앱이 기동에서 멈춘다. CORS 가 빠졌을 때 화면은 멀쩡하고 기록만 조용히 사라지기 때문(§5.2 "기록하지 않은 답은 되살릴 수 없다"). F6-4 의 `type: caffeine` 명시와 같은 판단
+- **경로** — 두 경로를 정확히, 각자 쓰는 것만: `/api/participants` 는 `POST` + `Content-Type` 헤더 · `/api/participants/count` 는 `GET`. `/api/participants/**` ✗ · `/api/**` ✗(F7 `/results` 는 CORS 불필요). 쿠키·로그인이 없어 `allowCredentials` 는 기본값(꺼짐)
 
 **진행 상황** (2026-11-03)
 
 | | 할 일 | 누가 | 검증 |
 | --- | --- | --- | --- |
 | 0 | 브랜치 `feat/cors` + 이 HANDOFF 갱신 | Claude | ✅ |
-| 1 | 정하기 — 허용 출처 · 값을 둘 곳(환경변수 · 기본값 여부) · 경로 범위 | 사용자 결정 | ⬜ **← 다음** |
-| 2 | CORS 설정 코드 + `application.yml` · `.env` | 사용자 | ⬜ |
+| 1 | 정하기 — 허용 출처 · 값을 둘 곳(환경변수 · 기본값 여부) · 경로 범위 | 사용자 결정 | ✅ 위 "결정" |
+| 2 | CORS 설정 코드 + `application.yml` · `.env` — `.env` 한 줄을 넣기 **전에** 테스트가 기동 실패하는지(기본값 없음 확인) | 사용자 | ⬜ **← 다음** |
 | 3 | `http/participants.http` 에 `Origin` 붙인 요청 — 허용 출처는 허락 헤더가 오고, 다른 출처는 거절되는지 · `OPTIONS` 사전 요청 | Claude(파일) · 사용자(전송) | ⬜ |
 | 4 | 테스트 | 사용자 | ⬜ |
 | 5 | HANDOFF 정리 · PR | Claude | ⬜ |
