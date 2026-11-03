@@ -64,3 +64,29 @@ POST http://localhost:8080/api/participants
 Content-Type: application/json
 
 {"categorySlug": "football", "resultSlug": "man-city", "answerCode": "032102223"}
+
+# ── CORS (F6-5) — 브라우저 흉내: 브라우저가 자동으로 붙이는 Origin 헤더를 손으로 붙인다 ──
+# 본문이 아니라 응답 "헤더"를 본다 — 허락 헤더 = Access-Control-Allow-Origin
+# Origin 이 없는 요청(⑦ 등)은 CORS 요청이 아니라서 설정과 상관없이 그대로 통과한다
+# 기대값은 CORS 설정 "후" 기준. 설정 "전"(F6-5 2-0)에는 ⑬~⑮ 모두 허락 헤더가 없다
+
+### ⑬ 허용 출처에서 GET count → 200 · Access-Control-Allow-Origin: http://localhost:3000
+GET http://localhost:8080/api/participants/count?categorySlug=football
+Origin: http://localhost:3000
+
+### ⑭ 허용 안 된 출처에서 GET count → 403 · 본문 Invalid CORS request · 허락 헤더 없음
+GET http://localhost:8080/api/participants/count?categorySlug=football
+Origin: http://localhost:3001
+
+### ⑮ 사전 요청 — 브라우저가 JSON POST 전에 먼저 보내는 것 → 200 · Allow-Origin · Allow-Methods: POST · Allow-Headers · Max-Age
+OPTIONS http://localhost:8080/api/participants
+Origin: http://localhost:3000
+Access-Control-Request-Method: POST
+Access-Control-Request-Headers: content-type
+
+### ⑯ 허용 출처에서 진짜 POST (사전 요청 통과 뒤 브라우저가 보내는 것) → 201 · Access-Control-Allow-Origin · 행 추가
+POST http://localhost:8080/api/participants
+Origin: http://localhost:3000
+Content-Type: application/json
+
+{"categorySlug": "football", "resultSlug": "man-city", "answerCode": "032102223"}
