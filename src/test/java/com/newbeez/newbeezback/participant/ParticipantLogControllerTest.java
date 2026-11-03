@@ -129,4 +129,22 @@ class ParticipantLogControllerTest {
                         {"count": %d}
                         """.formatted(expected));
     }
+
+    @Test
+    void count_without_category_slug_returns_400() {
+        assertThat(mvc.get().uri("/api/participants/count"))
+                .hasStatus(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void count_with_unknown_category_slug_returns_400() {
+        assertThat(mvc.get().uri("/api/participants/count").param("categorySlug", "baseball"))
+                .hasStatus(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void count_with_empty_category_slug_returns_400() {
+        assertThat(mvc.get().uri("/api/participants/count").param("categorySlug", ""))
+                .hasStatus(HttpStatus.BAD_REQUEST);
+    }
 }
