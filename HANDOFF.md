@@ -7,8 +7,8 @@
 > - 작업 규칙(역할·커밋·브랜치·스택 주의점) → [CLAUDE.md](CLAUDE.md)
 > - 프론트 진행 상황 → 프론트 레포 `HANDOFF.md`
 
-**마지막 업데이트: 2026-11-03 (데스크톱)** — **F6-4 구현·테스트 완료, PR 대기** — `GET /api/participants/count?categorySlug=football` → `{"count": N}` + **10초 Caffeine 캐시**. `./gradlew clean build` 12건 통과 · jar 에 Caffeine 포함 확인. PR 이 머지되면 다음은 **F6-5 CORS**. F7 설계는 2026-10-20 확정 · Flyway 는 첫 배포 전 F6.5
-🔀 **브랜치** — F6-4 전체가 `feat/participant-count` 에 있다. PR 머지를 확인하면 이 브랜치를 로컬·원격 모두 지우고, F6-5 는 `main` 에서 새 브랜치로 시작한다. `main` 에 직접 커밋·push 하지 않는다 — PR 로만 ([CLAUDE.md](CLAUDE.md))
+**마지막 업데이트: 2026-11-03 (데스크톱)** — **F6-5 CORS 시작** — 아래 F6-5 절 진행 표. F6-4 완료(PR #7 · `009796a` — 참여자 수 API + 10초 Caffeine 캐시). F7 설계는 2026-10-20 확정 · Flyway 는 첫 배포 전 F6.5
+🔀 **브랜치** — F6-5 는 `feat/cors` 에서 한다. 슬라이스 끝에 PR 하나 · `main` 에 직접 커밋·push 하지 않는다 — PR 로만 ([CLAUDE.md](CLAUDE.md))
 
 ### ▶ 다른 PC에서 이어갈 때
 
@@ -35,9 +35,9 @@
 | **F6-1** | **DB 설정** — `application.yml` + 환경변수 접속 → `bootRun` 성공 | ✅ `44e2283` (2026-10-06) |
 | **F6-2** | `participant_logs` 엔티티 + Repository | ✅ PR #2 `5559dd6` (2026-10-27) |
 | **F6-3** | `POST /api/participants` — 4계층 첫 관통 | ✅ PR #3·#4·#5 `8e640af` (2026-10-29) |
-| **F6-4** | `GET /api/participants/count?categorySlug=` + **10초 캐시** | ✅ 2026-11-03 — **PR 대기** (`feat/participant-count`) |
+| **F6-4** | `GET /api/participants/count?categorySlug=` + **10초 캐시** | ✅ PR #7 `009796a` (2026-11-03) |
 | 선택 | **Redis 캐시 실습** — 학습용 · 배포에 넣지 않는다. 아래 F6-4 절 "선택 과제" | ⬜ 아무 때나 (2026-11-03 추가) |
-| F6-5 | **CORS** — 브라우저가 직접 부르는 두 엔드포인트만 | ⬜ **← 다음** |
+| **F6-5** | **CORS** — 브라우저가 직접 부르는 두 엔드포인트만 | 🟡 **진행 중** (`feat/cors`) |
 | **F6.5** | **Flyway 전환** — `V1__participant_logs.sql` · `ddl-auto` 는 `validate` 고정 | ⬜ **배포 전** (2026-10-27 F7 앞에서 배포 앞으로 이동) |
 | **D1** | **첫 배포** — Dockerfile · 운영 MySQL 8.4 · 환경변수 · 유휴 회수 없는 호스팅 | ⬜ 2026-10-27 추가 |
 | 연동 | 프론트가 완료 시 `POST` + `ParticipantCount` — 실제 참여자 수·답코드가 쌓이기 시작 | ⬜ (프론트 작업) |
@@ -50,17 +50,35 @@
 
 ---
 
-## ⬜ 다음 — F6-5 CORS
+## 🟡 F6-5 CORS — 진행 중 (브랜치 `feat/cors`)
 
-- 대상은 **브라우저가 직접 부르는 두 엔드포인트**뿐 — `POST /api/participants` · `GET /api/participants/count`
-- `application/json` POST 라서 브라우저가 **`OPTIONS` 사전 요청**을 먼저 보낸다 → `OPTIONS` 메서드와 `Content-Type` 헤더를 허용해야 한다(F6-3 계약 때 확인)
-- 계약 원본은 프론트 ARCHITECTURE §6 — 시작 전에 프론트 클론을 `git fetch` 로 맞추고 다시 읽는다
+**계약의 원본은 프론트 ARCHITECTURE §6** (2026-11-03 `78dee33` 에서 다시 읽음). 백엔드가 알아야 할 것만:
+
+- 대상은 **브라우저가 직접 부르는 두 엔드포인트**뿐 — `POST /api/participants` · `GET /api/participants/count`. `GET /results`(F7)는 Next 서버가 빌드 때 부르므로 CORS 불필요
+- `POST` 는 `application/json` 이라 브라우저가 **`OPTIONS` 사전 요청**을 먼저 보낸다 → `Content-Type` 헤더를 허용해야 한다. `GET count` 는 사용자 정의 헤더가 없는 단순 GET 이라 사전 요청이 없다(그래도 허락 헤더는 필요)
+- **CORS 는 브라우저가 검사하고 서버가 허락한다** — `.http`·MockMvc·curl 은 검사하지 않아서, 지금까지의 확인은 CORS 와 무관하게 통과했다. 측정은 `Origin` 헤더를 붙여 보내고 **응답 헤더**(`Access-Control-Allow-Origin`)를 본다
+
+**jar 확인** (2026-11-03 · Framework 7.0.8 · Boot 4.1.0)
+- Boot 에는 MVC CORS 설정 키가 **없다**(`spring-boot-webmvc` 메타데이터에 `cors` 0개) → Java 설정 `WebMvcConfigurer.addCorsMappings(CorsRegistry)`
+- `registry.addMapping(경로)` 의 기본값(`applyPermitDefaultValues`): 출처 `*` · 메서드 `GET`·`HEAD`·`POST` · 헤더 `*` · `maxAge` 1800초 — **출처를 지정하지 않으면 모두 허용**이 된다
+- `CorsRegistration` 메서드: `allowedOrigins` · `allowedOriginPatterns` · `allowedMethods` · `allowedHeaders` · `exposedHeaders` · `allowCredentials` · `allowPrivateNetwork` · `maxAge`
+
+**진행 상황** (2026-11-03)
+
+| | 할 일 | 누가 | 검증 |
+| --- | --- | --- | --- |
+| 0 | 브랜치 `feat/cors` + 이 HANDOFF 갱신 | Claude | ✅ |
+| 1 | 정하기 — 허용 출처 · 값을 둘 곳(환경변수 · 기본값 여부) · 경로 범위 | 사용자 결정 | ⬜ **← 다음** |
+| 2 | CORS 설정 코드 + `application.yml` · `.env` | 사용자 | ⬜ |
+| 3 | `http/participants.http` 에 `Origin` 붙인 요청 — 허용 출처는 허락 헤더가 오고, 다른 출처는 거절되는지 · `OPTIONS` 사전 요청 | Claude(파일) · 사용자(전송) | ⬜ |
+| 4 | 테스트 | 사용자 | ⬜ |
+| 5 | HANDOFF 정리 · PR | Claude | ⬜ |
 
 ---
 
 ## ✅ 끝난 슬라이스 — 결론만
 
-### ✅ F6-4 참여자 수 `GET /api/participants/count` — 2026-11-03 (PR 대기)
+### ✅ F6-4 참여자 수 `GET /api/participants/count` — 2026-11-03 (PR #7 · `009796a`)
 
 **계약의 원본은 프론트 ARCHITECTURE §6** (2026-10-29 확정 · 10초는 2026-11-02). 백엔드가 알아야 할 것만:
 
@@ -273,6 +291,7 @@ create index idx_created on participant_logs (created_at);
 - `BAD_CODES` 2개 교체 — 길이 검사 변이를 audit 가 못 잡는다
 - ARCHITECTURE §9 #3 · #5 · #6 — #6(임베드 실기기)은 아이폰 카톡 인앱을 사용자가 확인했다
 - 노트북의 커밋 안 한 바이에른 변경 — 사용자 결정 대기
+- `app/football/quiz/_components/ParticipantCount.tsx` 주석의 `GET /api/v1/participants/count` — 주소 버전은 PR #4 에서 없앴다 → `/api/participants/count` (2026-11-03 발견)
 
 ---
 
