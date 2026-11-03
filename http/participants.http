@@ -90,3 +90,14 @@ Origin: http://localhost:3000
 Content-Type: application/json
 
 {"categorySlug": "football", "resultSlug": "man-city", "answerCode": "032102223"}
+
+### ⑰ 사전 요청 — 허락 안 한 메서드(DELETE)를 묻는다 → 403 · Invalid CORS request
+OPTIONS http://localhost:8080/api/participants
+Origin: http://localhost:3000
+Access-Control-Request-Method: DELETE
+
+### ⑱ 사전 요청 — 허락 안 한 헤더(x-debug)를 함께 묻는다 → 403 · Invalid CORS request
+OPTIONS http://localhost:8080/api/participants
+Origin: http://localhost:3000
+Access-Control-Request-Method: POST
+Access-Control-Request-Headers: content-type, x-debug
