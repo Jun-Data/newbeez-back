@@ -147,4 +147,32 @@ class ParticipantLogControllerTest {
         assertThat(mvc.get().uri("/api/participants/count").param("categorySlug", ""))
                 .hasStatus(HttpStatus.BAD_REQUEST);
     }
+
+    @Test
+    void count_is_cached_until_cache_is_cleared() {
+        long before = repository.countByCategorySlug("football");
+        assertFootballCount(before);
+
+        assertThat(mvc.post().uri("/api/participants")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"categorySlug": "football", "resultSlug": "man-city", "answerCode": "032102223"}
+                        """))
+                .hasStatus(HttpStatus.CREATED);
+
+        // DB 에는 한 명 늘었지만 캐시가 앞의 숫자를 돌려준다
+        assertFootballCount(before);
+
+        // 비우면 10초가 지난 것과 같다 - 다시 DB 에서 센다
+        clearParticipantCountCache();
+        assertFootballCount(before + 1);
+    }
+
+    private void assertFootballCount(long expected) {
+        assertThat(mvc.get().uri("/api/participants/count").param("categorySlug", "football"))
+                .hasStatusOk()
+                .bodyJson().isStrictlyEqualTo("""
+                        {"count": %d}
+                        """.formatted(expected));
+    }
 }
