@@ -57,6 +57,7 @@
 | **F6-2** | `participant_logs` 엔티티 + Repository + 테스트 | ✅ PR #2 `5559dd6` (2026-10-27) |
 | **F6-3** | `POST /api/participants` — 4계층 첫 관통 | ✅ PR #3·#4·#5 `8e640af` (2026-10-29) |
 | **F6-4** | `GET /api/participants/count?categorySlug=` + **10초 캐시** (임계값 없음 · 2026-10-29 · 10초는 2026-11-02) | 🟡 **진행 중** (`feat/participant-count`) |
+| 선택 | **Redis 캐시 실습** — 학습용 · 배포에 넣지 않는다. 아래 F6-4 절 "선택 과제" | ⬜ F6-4 뒤 아무 때나 (2026-11-03 추가) |
 | F6-5 | **CORS** — 브라우저가 직접 부르는 두 엔드포인트만 | ⬜ |
 | **F6.5** | **Flyway 전환** — `V1__participant_logs.sql` · `ddl-auto` 는 `validate` 고정 | ⬜ **배포 전** (2026-10-27 F7 앞에서 배포 앞으로 이동) |
 | **D1** | **첫 배포** — Dockerfile · 운영 MySQL 8.4 · 환경변수 · 유휴 회수 없는 호스팅 | ⬜ 2026-10-27 추가 |
@@ -246,6 +247,14 @@ create index idx_created on participant_logs (created_at);
 - 400 응답 본문엔 이유가 없다(Boot 기본 오류 JSON: `status`·`error`·`path`). 어느 검사에 걸렸는지는 본문으로 구별 못 한다
 - `.http` 를 **"전체 실행"하면 전 → 행동 → 후 측정이 깨진다** — 값의 변화를 볼 땐 ▶ 를 하나씩. IntelliJ HTTP Client 는 `?categorySlug=` 를 `?categorySlug` 로 보낸다(로그 기준 · 400 은 같음)
 - `.http` 의 POST 는 롤백되지 않고 로컬 DB 에 쌓인다 — 2026-10-30 기준 football 7행
+
+**F6-4 뒤 선택 과제 — Redis 캐시 실습 (2026-11-03 사용자 요청 · 학습용)**
+
+- **왜 MVP 는 Caffeine 인가** — 백엔드가 한 대(D1)라 Redis 의 장점(서버 여러 대가 같은 값 공유)이 쓸모없다. 여러 대여도 이 숫자는 서버마다 최대 10초 달라도 괜찮다. Redis 는 인프라가 하나 늘고, **Redis 가 죽으면 Spring 캐시 기본 오류 처리가 예외를 그대로 던져 API 가 500** 이 된다
+- **실습 내용** — `@Cacheable` 코드는 그대로 두고 **저장소만 바꾼다**(틀/저장소 분리 확인). `build.gradle` 에 `spring-boot-starter-data-redis`(Boot 4.1 BOM 에 있음) · `spring.cache.type: redis` · `spring.cache.redis.time-to-live: 10s`(4.0.0 jar 에서 키 확인) · 접속 주소는 DB 처럼 환경변수로 — 접속 설정 키는 그때 4.1.0 jar 로 확인
+- **실행** — Redis 는 Windows 공식 지원이 없다 → Docker(`jun98` PC 에 28.5.2 있음 · 2026-11-03): `docker run -d --name redis -p 6379:6379 redis`. 개인 학습은 무료(Redis 8 은 AGPLv3 선택 가능 · 오픈소스 갈래 Valkey 도 있음)
+- **측정** — 6-3 과 같은 `.http` 측정(10초 안엔 안 바뀌고 지나면 바뀌는지) + Redis 를 끄면 무슨 일이 나는지
+- **경계** — 실습 브랜치에서 한다. `main` 에 넣을지는 그때 결정 — 기본은 Caffeine 유지. 테스트도 Redis 가 떠 있어야 돈다는 점에 주의
 
 ### ⬜ F6.5 Flyway (배포 전) + F7 `team_results` (배포·연동 뒤) — 설계 확정 (2026-10-20)
 
