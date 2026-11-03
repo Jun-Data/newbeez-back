@@ -118,4 +118,15 @@ class ParticipantLogControllerTest {
                 .hasStatus(HttpStatus.METHOD_NOT_ALLOWED)
                 .headers().hasValue("Allow", "POST");
     }
+
+    @Test
+    void count_returns_200_with_db_count() {
+        long expected = repository.countByCategorySlug("football");
+
+        assertThat(mvc.get().uri("/api/participants/count").param("categorySlug", "football"))
+                .hasStatusOk()
+                .bodyJson().isStrictlyEqualTo("""
+                        {"count": %d}
+                        """.formatted(expected));
+    }
 }
