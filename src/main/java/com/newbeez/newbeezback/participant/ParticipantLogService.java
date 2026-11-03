@@ -1,5 +1,6 @@
 package com.newbeez.newbeezback.participant;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,7 @@ public class ParticipantLogService {
         repository.save(log);
     }
 
+    @Cacheable(cacheNames = "participantCount", sync = true)
     @Transactional(readOnly = true)
     public long count(String categorySlug) {
         return repository.countByCategorySlug(categorySlug);
