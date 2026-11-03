@@ -16,7 +16,7 @@
 
 1. **백엔드** — `git fetch --prune` 후 작업 브랜치로(`git switch <브랜치>` · `git pull`). PR 이 이미 머지됐으면 `git switch main` · `git pull` 하고 머지된 로컬 브랜치는 `git branch -d` 로 지운다(옛 `feat/participant-log` · `feat/participant-api` 가 남아 있으면 같이) · ⚠️ **커밋 안 한 변경부터 치운다** — 원격에서 지운 파일(예: 2026-10-29 에 지운 `ParticipantLogRepositoryTest.java`)을 그 PC 에서 고치고 있었다면 `switch` 가 거부되지 않고 **그 파일을 새 브랜치로 조용히 들고 간다**(2026-11-02 노트북 재현). 먼저 커밋하거나 `git stash`
 2. **프론트** — `git switch main` 후 `git pull` (§6 계약: PR #3 `POST /participants` · #4 주소 버전 제거 · #5 참여자 수 · #6 캐시 10초)
-3. **그 PC 의 준비** — 아래 F6-1 표에서 ⬜ 인 것부터(계정 · `.env`, `NEWBEEZ_DDL_AUTO=update` 포함). `bootRun` 이 뜨면 그 PC 의 DB 에도 `participant_logs` 가 생긴 것이다 — Workbench `SHOW CREATE TABLE participant_logs;` 가 아래 F6-2 의 SQL 과 같은지 본다
+3. **그 PC 의 준비** — 아래 F6-1 표에서 ⬜ 인 것부터(계정 · `.env` — `NEWBEEZ_DDL_AUTO=update` · F6-5 2-3 부터 `NEWBEEZ_CORS_ALLOWED_ORIGINS` 포함). `bootRun` 이 뜨면 그 PC 의 DB 에도 `participant_logs` 가 생긴 것이다 — Workbench `SHOW CREATE TABLE participant_logs;` 가 아래 F6-2 의 SQL 과 같은지 본다
 4. **IntelliJ 를 쓰면 세 가지를 먼저 본다** — `.idea` 는 git 이 무시해서 PC마다 설정이 다르다
    - **Project SDK 가 21 인가** (File → Project Structure → Project → SDK). `jun98` PC 에는 실험판 `valhalla-ea-23` 이 잡혀 있었다 → 2026-10-16 `ms-21` (21.0.11) 로 바꿈
    - **실행은 상단 드롭다운의 `NewbeezBackApplication`(Spring Boot) ▶** — Gradle 실행 설정은 task 칸이 비어 있으면 `> Task :help` 만 돌고 앱이 안 켜진다
@@ -69,7 +69,7 @@
 - ⚠️ **`@EnableWebMvc` 를 붙이지 않는다** — `WebMvcConfigurer` 만 구현한다. 붙이면 Boot 의 MVC 자동 설정 전체가 꺼진다(`WebMvcAutoConfiguration` 의 `@ConditionalOnMissingBean(WebMvcConfigurationSupport)`)
 
 **결정** (2026-11-03 사용자 결정)
-- **허용 출처** — 지금은 `http://localhost:3000` 하나. 운영 프론트 주소는 D1 에서 환경변수에 **추가만** 한다(코드 변경 없음). `*` ✗ · `https://*.vercel.app` 패턴 ✗(남의 Vercel 사이트까지 열린다). 출처는 글자 하나까지 같아야 한다(끝 `/` ✗)
+- **허용 출처** — 지금은 `http://localhost:3000` 하나. 운영 프론트 주소는 D1 에서 환경변수에 **추가만** 한다(코드 변경 없음). `*` ✗ · `https://*.vercel.app` 패턴 ✗(남의 Vercel 사이트까지 열린다). **출처 비교 규칙**(2026-11-03 `CorsConfiguration.checkOrigin` 을 직접 불러 확인): 끝 `/` · 대소문자는 무시하고 허락 · **호스트 이름**(`localhost` ≠ `127.0.0.1`) · 포트 · 프로토콜이 다르면 거절 · 목록 값 앞뒤에 공백이 있으면 거절(값을 그대로 비교한다)
 - **값을 둘 곳** — 환경변수 `NEWBEEZ_CORS_ALLOWED_ORIGINS`(쉼표로 여러 개) → `application.yml` 의 `newbeez.cors.allowed-origins` · **기본값 없음** — 빠지면 앱이 기동에서 멈춘다. CORS 가 빠졌을 때 화면은 멀쩡하고 기록만 조용히 사라지기 때문(§5.2 "기록하지 않은 답은 되살릴 수 없다"). F6-4 의 `type: caffeine` 명시와 같은 판단
 - **경로** — 두 경로를 정확히, 각자 쓰는 것만: `/api/participants` 는 `POST` + `Content-Type` 헤더 · `/api/participants/count` 는 `GET`. `/api/participants/**` ✗ · `/api/**` ✗(F7 `/results` 는 CORS 불필요). 쿠키·로그인이 없어 `allowCredentials` 는 기본값(꺼짐)
 
@@ -79,8 +79,8 @@
 | --- | --- | --- | --- |
 | 0 | 브랜치 `feat/cors` + 이 HANDOFF 갱신 | Claude | ✅ |
 | 1 | 정하기 — 허용 출처 · 값을 둘 곳(환경변수 · 기본값 여부) · 경로 범위 | 사용자 결정 | ✅ 위 "결정" |
-| 2 | 코드 — **개념 하나씩 · 매번 `.http` ⑬~⑯ 로 응답 헤더 측정** (2026-11-03 사용자 요청으로 순서 재구성) | 사용자(코드·전송) · Claude(`.http`) | 🟡 |
-| 2-0 | 코드 없이 측정 — 지금은 허락 헤더가 없다(문제부터 보기) | 사용자(전송) | ✅ ⑬⑭ 둘 다 200 · 응답이 글자 하나까지 같음(서버가 출처를 안 봄) · ⑮ 200 · 허락 헤더 없음(`Allow: GET, HEAD, POST, …` 는 CORS 와 무관한 서블릿 기본 응답) |
+| 2 | 코드 — **개념 하나씩 · 매번 `.http` ⑬~⑱ 로 응답 헤더 측정** (2026-11-03 사용자 요청으로 순서 재구성) | 사용자(코드·전송) · Claude(`.http`) | 🟡 |
+| 2-0 | 코드 없이 측정 — 지금은 허락 헤더가 없다(문제부터 보기) | 사용자(전송) | ✅ ⑬⑭ 둘 다 200 · 응답이 글자 하나까지 같음(서버가 출처를 안 봄) · ⑮ 200 · 허락 헤더 없음(`Allow: GET, HEAD, POST, …` 는 CORS 와 무관한 서블릿 기본 응답 — `FrameworkServlet.doOptions` 가 응답에 `Allow` 가 없으면 `HttpServletBean.doOptions` 를 부른다 · javap) |
 | 2-1 | `CorsConfig` + **GET count 규칙 하나** · 출처는 코드에 직접 — 헤더가 생기고, 다른 출처는 403 | 사용자 | ✅ `dbb69ef` — ⑬ 200 + `Access-Control-Allow-Origin: http://localhost:3000` · ⑭ **403** `Invalid CORS request` · ⑦ 200 그대로 · ⑮ 변화 없음(규칙 없는 경로) · ⑬⑭⑦ 에 `Vary` 3개가 새로 붙음 |
 | 2-2 | **POST 규칙** 추가 — `OPTIONS` 사전 요청에 허락 헤더 | 사용자 | ⬜ **← 다음** |
 | 2-3 | 출처를 **환경변수로** — `yml` · `@Value` · `.env`. `.env` 한 줄 전에 테스트가 기동 실패하는지(기본값 없음 확인) → 넣은 뒤 2-1·2-2 와 같은 결과 | 사용자 | ⬜ |
@@ -196,6 +196,7 @@ create index idx_created on participant_logs (created_at);
 | 앱 전용 계정 `newbeez` | ✅ | ✅ (2026-10-20 `bootRun` 접속 성공) |
 | `.env` | ✅ | ✅ (2026-10-20 · 2026-11-02 있음 확인) |
 | `.env` 의 `NEWBEEZ_DDL_AUTO=update` | ✅ (2026-10-14) | ✅ (2026-10-20 · `SHOW CREATE TABLE` 이 F6-2 의 SQL 과 같음) |
+| `.env` 의 `NEWBEEZ_CORS_ALLOWED_ORIGINS=http://localhost:3000` (**F6-5 2-3 부터 필수** — 없으면 기동 실패) | ⬜ (2-3 에서 넣음) | ⬜ |
 
 **⬜ 인 PC에서 할 일**
 
@@ -207,6 +208,7 @@ create index idx_created on participant_logs (created_at);
    ```
 2. `.env.example` 을 같은 폴더에 `.env` 로 복사하고 DB 값 3개를 채운다
    - `NEWBEEZ_DDL_AUTO=update` 줄은 **켜 둔다** — 켜져 있어야 엔티티대로 테이블이 생긴다(F6.5 Flyway 전환 때 지운다)
+   - `NEWBEEZ_CORS_ALLOWED_ORIGINS` 줄도 그대로 둔다(F6-5 2-3 부터 필수). **이미 `.env` 가 있는 PC 는 이 줄만 추가**한다 — `.env` 는 git 으로 오가지 않아서 `.env.example` 이 바뀌어도 저절로 생기지 않는다
 3. `./gradlew bootRun` → `Started NewbeezBackApplication` 이 찍히면 성공. 확인은 `http/participants.http` 의 ⑦(참여자 수)
 
 ### 🧹 2026-09-04 — 레거시 폐기
@@ -245,6 +247,8 @@ create index idx_created on participant_logs (created_at);
 - 로그의 `The following 1 profile is active: "loc"` 는 `jun98` PC 의 사용자 환경변수 탓이다(다른 프로젝트용). 해롭지 않지만 **설정을 프로필에 기대면 안 되는 이유**다 → [CLAUDE.md](CLAUDE.md) 규칙
 - ⚠️ **PowerShell 에서 `curl` 은 `Invoke-WebRequest` 의 별칭이다** — `curl.exe` 로 쳐야 한다. 게다가 **Windows PowerShell 5.1 은 `curl.exe` 같은 프로그램에 넘기는 인자에서 큰따옴표를 지운다** — `-d '{"categorySlug":"football"}'` 가 `{categorySlug:football}` 로 넘어가 400 이 된다(측정). **요청은 `http/participants.http`(IntelliJ HTTP Client · 요청 옆 ▶)로 보낸다.** Postman CLI 도 이 PC 에 있다
 - ⚠️ **`.http` 를 "전체 실행"하면 전 → 행동 → 후 측정이 깨진다** — 값의 변화를 볼 땐 ▶ 를 하나씩. IntelliJ HTTP Client 는 `?categorySlug=` 를 `?categorySlug` 로 보낸다(로그 기준 · 400 은 같음)
+- ⚠️ **IntelliJ HTTP Client 는 응답 헤더를 파일로 남기지 않는다** — `.idea/httpRequests/` 에는 본문(`<시각>.<상태>.json`·`.txt`)과 요청 기록(`http-requests-log.http`)만 있다(2026-11-03 확인). 헤더를 봐야 하는 측정(CORS)은 응답 창을 보거나, 같은 요청을 Bash 의 `curl -s -i` 로 보낸다
+- ⚠️ **`Port 8080 was already in use` 는 이미 떠 있는 앱이 원인이다** — 2026-11-03: 11:19 에 IntelliJ ▶ 로 켠 newbeez 자신이 4시간 넘게 8080 을 쥐고 있었다. 누가 쓰는지는 PowerShell `Get-NetTCPConnection -LocalPort 8080 -State Listen` 의 `OwningProcess` 로 찾고, 프로세스 이름(`java.exe`)이 아니라 **실행 대상(main 클래스)**까지 본다. 실행은 한 방법(▶ 또는 `./gradlew bootRun`)만 쓰고, 측정 전에 `Started` 시각이 소스 저장보다 뒤인지 본다 — 옛 앱이 답하면 새 코드가 안 먹는 것처럼 보인다
 
 ### JPA · DB
 
