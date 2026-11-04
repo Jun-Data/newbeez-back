@@ -7,7 +7,7 @@
 > - 작업 규칙(역할·커밋·브랜치·스택 주의점) → [CLAUDE.md](CLAUDE.md)
 > - 프론트 진행 상황 → 프론트 레포 `HANDOFF.md`
 
-**마지막 업데이트: 2026-11-03 (데스크톱)** — **F6-5 CORS 시작** — 아래 F6-5 절 진행 표. F6-4 완료(PR #7 · `009796a` — 참여자 수 API + 10초 Caffeine 캐시). F7 설계는 2026-10-20 확정 · Flyway 는 첫 배포 전 F6.5
+**마지막 업데이트: 2026-11-04 (데스크톱)** — **F6-5 CORS 2-2 까지 완료 · 다음 2-3**(출처를 환경변수로) — 아래 F6-5 절 진행 표. F6-4 완료(PR #7 · `009796a` — 참여자 수 API + 10초 Caffeine 캐시). F7 설계는 2026-10-20 확정 · Flyway 는 첫 배포 전 F6.5
 🔀 **브랜치** — F6-5 는 `feat/cors` 에서 한다. 슬라이스 끝에 PR 하나 · `main` 에 직접 커밋·push 하지 않는다 — PR 로만 ([CLAUDE.md](CLAUDE.md))
 
 ### ▶ 다른 PC에서 이어갈 때
@@ -63,7 +63,10 @@
 - Boot 에는 MVC CORS 설정 키가 **없다**(`spring-boot-webmvc` 메타데이터에 `cors` 0개) → Java 설정 `WebMvcConfigurer.addCorsMappings(CorsRegistry)`
 - `registry.addMapping(경로)` 의 기본값(`applyPermitDefaultValues`): 출처 `*` · 메서드 `GET`·`HEAD`·`POST` · 헤더 `*` · `maxAge` 1800초 — **출처를 지정하지 않으면 모두 허용**이 된다
 - `CorsRegistration` 메서드: `allowedOrigins` · `allowedOriginPatterns` · `allowedMethods` · `allowedHeaders` · `exposedHeaders` · `allowCredentials` · `allowPrivateNetwork` · `maxAge`
-- **설정이 있는 경로에서 목록 밖 출처는 Spring 이 403 으로 돌려보낸다** — 본문 `Invalid CORS request` · 컨트롤러까지 가지 않는다(`DefaultCorsProcessor.handleInternal` → `rejectRequest`). 메서드·헤더가 목록 밖이어도 같다. "서버는 헤더만 붙이고 거절은 안 한다"는 설정이 **없는** 경로에서만 맞다
+- **설정이 있는 경로에서 목록 밖 출처는 Spring 이 403 으로 돌려보낸다** — 본문 `Invalid CORS request` · 컨트롤러까지 가지 않는다(`DefaultCorsProcessor.handleInternal` → `rejectRequest`). 목록 밖 **메서드**도 같다. "서버는 헤더만 붙이고 거절은 안 한다"는 설정이 **없는** 경로에서만 맞다
+- ⚠️ **헤더는 다르다** — 사전 요청이 묻는 헤더 중 **허락된 것만 골라** `Access-Control-Allow-Headers` 로 돌려주고, **하나도 허락되지 않을 때만** 403 이다(`CorsConfiguration.checkHeaders` 가 끝에서 `result.isEmpty() ? null`). 섞여 있으면 200 이고, 빠진 헤더를 보고 진짜 요청을 막는 건 **브라우저**다 → **서버 200 ≠ 브라우저 허락**. 2026-11-04 ⑱ · ⑲ 실측(처음엔 403 으로 잘못 예상 — `66a7e00` 본문, `77c24f9` 에서 정정)
+- 헤더 이름 비교는 대소문자 무시(`equalsIgnoreCase`) — 코드의 `Content-Type` 이 브라우저의 `content-type` 과 맞는다. 응답에는 **요청이 보낸 철자 그대로** 돌려준다
+- `Allow-Methods` · `Allow-Headers` · `Max-Age` 는 **사전 요청(⑮) 응답에만** 붙는다. 진짜 요청(⑯) 응답에는 `Allow-Origin` 만 — 이 줄이 없으면 201 이어도 브라우저는 실패로 본다(행은 저장되는데 프론트는 에러)
 - **`Origin` 헤더가 없는 요청은 CORS 요청이 아니라서 그대로 통과**한다(`isCorsRequest` false) — `.http`·curl·Next 서버(F7)는 영향 없음. CORS 는 남용 방어가 아니다
 - 설정이 없는 경로는 건너뛴다(`Skip: no CORS configuration has been provided`). 사전 요청은 Spring 이 대신 답하지만(`PreFlightHttpRequestHandler`) 허락 헤더가 없다 — 지금의 `POST` 상태
 - ⚠️ **`@EnableWebMvc` 를 붙이지 않는다** — `WebMvcConfigurer` 만 구현한다. 붙이면 Boot 의 MVC 자동 설정 전체가 꺼진다(`WebMvcAutoConfiguration` 의 `@ConditionalOnMissingBean(WebMvcConfigurationSupport)`)
@@ -73,18 +76,18 @@
 - **값을 둘 곳** — 환경변수 `NEWBEEZ_CORS_ALLOWED_ORIGINS`(쉼표로 여러 개) → `application.yml` 의 `newbeez.cors.allowed-origins` · **기본값 없음** — 빠지면 앱이 기동에서 멈춘다. CORS 가 빠졌을 때 화면은 멀쩡하고 기록만 조용히 사라지기 때문(§5.2 "기록하지 않은 답은 되살릴 수 없다"). F6-4 의 `type: caffeine` 명시와 같은 판단
 - **경로** — 두 경로를 정확히, 각자 쓰는 것만: `/api/participants` 는 `POST` + `Content-Type` 헤더 · `/api/participants/count` 는 `GET`. `/api/participants/**` ✗ · `/api/**` ✗(F7 `/results` 는 CORS 불필요). 쿠키·로그인이 없어 `allowCredentials` 는 기본값(꺼짐)
 
-**진행 상황** (2026-11-03)
+**진행 상황** (2026-11-04)
 
 | | 할 일 | 누가 | 검증 |
 | --- | --- | --- | --- |
 | 0 | 브랜치 `feat/cors` + 이 HANDOFF 갱신 | Claude | ✅ |
 | 1 | 정하기 — 허용 출처 · 값을 둘 곳(환경변수 · 기본값 여부) · 경로 범위 | 사용자 결정 | ✅ 위 "결정" |
-| 2 | 코드 — **개념 하나씩 · 매번 `.http` ⑬~⑱ 로 응답 헤더 측정** (2026-11-03 사용자 요청으로 순서 재구성) | 사용자(코드·전송) · Claude(`.http`) | 🟡 |
+| 2 | 코드 — **개념 하나씩 · 매번 `.http` ⑬~⑲ 로 응답 헤더 측정** (2026-11-03 사용자 요청으로 순서 재구성) | 사용자(코드·전송) · Claude(`.http`) | 🟡 |
 | 2-0 | 코드 없이 측정 — 지금은 허락 헤더가 없다(문제부터 보기) | 사용자(전송) | ✅ ⑬⑭ 둘 다 200 · 응답이 글자 하나까지 같음(서버가 출처를 안 봄) · ⑮ 200 · 허락 헤더 없음(`Allow: GET, HEAD, POST, …` 는 CORS 와 무관한 서블릿 기본 응답 — `FrameworkServlet.doOptions` 가 응답에 `Allow` 가 없으면 `HttpServletBean.doOptions` 를 부른다 · javap) |
 | 2-1 | `CorsConfig` + **GET count 규칙 하나** · 출처는 코드에 직접 — 헤더가 생기고, 다른 출처는 403 | 사용자 | ✅ `dbb69ef` — ⑬ 200 + `Access-Control-Allow-Origin: http://localhost:3000` · ⑭ **403** `Invalid CORS request` · ⑦ 200 그대로 · ⑮ 변화 없음(규칙 없는 경로) · ⑬⑭⑦ 에 `Vary` 3개가 새로 붙음 |
-| 2-2 | **POST 규칙** 추가 — `OPTIONS` 사전 요청에 허락 헤더 | 사용자 | ⬜ **← 다음** |
-| 2-3 | 출처를 **환경변수로** — `yml` · `@Value` · `.env`. `.env` 한 줄 전에 테스트가 기동 실패하는지(기본값 없음 확인) → 넣은 뒤 2-1·2-2 와 같은 결과 | 사용자 | ⬜ |
-| 3 | 테스트 | 사용자 | ⬜ |
+| 2-2 | **POST 규칙** 추가 — `OPTIONS` 사전 요청에 허락 헤더 | 사용자 | ✅ `e5af8d0` — ⑮ 200 + Allow-Origin · Allow-Methods `POST` · Allow-Headers `content-type` · Max-Age `1800`(`Allow:` 줄은 그대로) · ⑰ DELETE **403** · ⑱ content-type + x-debug **200**(x-debug 빠짐 — 위 "헤더는 다르다") · ⑲ x-debug 만 **403** · ⑯ 201 + Allow-Origin(사전 요청용 헤더 없음) · count 9 → 11(⑯ 두 번 전송) |
+| 2-3 | 출처를 **환경변수로** — `yml` · `@Value` · `.env`. `.env` 한 줄 전에 테스트가 기동 실패하는지(기본값 없음 확인) → 넣은 뒤 2-1·2-2 와 같은 결과. 쉼표 뒤 공백을 `trim` 하는지도 실측(미확인) | 사용자 | ⬜ **← 다음** |
+| 3 | 테스트 — 상태 코드만이 아니라 **허락 헤더 값**까지 본다(⑱ 은 200 이어도 x-debug 가 빠진다) | 사용자 | ⬜ |
 | 4 | HANDOFF 정리 · PR | Claude | ⬜ |
 
 ---
