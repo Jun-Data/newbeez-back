@@ -96,8 +96,16 @@ OPTIONS http://localhost:8080/api/participants
 Origin: http://localhost:3000
 Access-Control-Request-Method: DELETE
 
-### ⑱ 사전 요청 — 허락 안 한 헤더(x-debug)를 함께 묻는다 → 403 · Invalid CORS request
+### ⑱ 사전 요청 — 허락한 헤더 + 허락 안 한 헤더(x-debug)를 함께 묻는다 → 200 · Allow-Headers: content-type (x-debug 는 빠짐)
+# 서버는 묻는 헤더 중 "허락된 것만" 골라 돌려준다 — 거절(403)은 하나도 허락 안 될 때만(⑲)
+# x-debug 가 응답 목록에 없으니 진짜 요청을 막는 쪽은 브라우저다 (서버 응답은 200 이어도)
 OPTIONS http://localhost:8080/api/participants
 Origin: http://localhost:3000
 Access-Control-Request-Method: POST
 Access-Control-Request-Headers: content-type, x-debug
+
+### ⑲ 사전 요청 — 허락 안 한 헤더(x-debug)만 묻는다 → 403 · Invalid CORS request
+OPTIONS http://localhost:8080/api/participants
+Origin: http://localhost:3000
+Access-Control-Request-Method: POST
+Access-Control-Request-Headers: x-debug
