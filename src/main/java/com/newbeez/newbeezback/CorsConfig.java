@@ -1,5 +1,6 @@
 package com.newbeez.newbeezback;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -8,13 +9,19 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class CorsConfig implements WebMvcConfigurer {
 
+    // 허용 출처 - .env의 NEWBEEZ_CORS_ALLOWED_ORIGINS
+    private final String[] allowedOrigins;
+
+    public CorsConfig(@Value("${newbeez.cors.allowed-origins}") String[] allowedOrigins) {
+        this.allowedOrigins = allowedOrigins;
+    }
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/participants/count")
-                .allowedOrigins("http://localhost:3000")
+                .allowedOrigins(allowedOrigins)
                 .allowedMethods("GET");
         registry.addMapping("/api/participants")
-                .allowedOrigins("http://localhost:3000")
+                .allowedOrigins(allowedOrigins)
                 .allowedMethods("POST")
                 .allowedHeaders("Content-Type");
     }

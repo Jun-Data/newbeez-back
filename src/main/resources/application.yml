@@ -16,3 +16,6 @@ spring:
     hibernate:
       ddl-auto: ${NEWBEEZ_DDL_AUTO:validate}
     open-in-view: false
+newbeez:
+  cors:
+    allowed-origins: ${NEWBEEZ_CORS_ALLOWED_ORIGINS}
