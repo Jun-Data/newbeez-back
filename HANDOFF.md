@@ -68,7 +68,7 @@
 - 헤더 이름 비교는 대소문자 무시(`equalsIgnoreCase`) — 코드의 `Content-Type` 이 브라우저의 `content-type` 과 맞는다. 응답에는 **요청이 보낸 철자 그대로** 돌려준다
 - `Allow-Methods` · `Allow-Headers` · `Max-Age` 는 **사전 요청(⑮) 응답에만** 붙는다. 진짜 요청(⑯) 응답에는 `Allow-Origin` 만 — 이 줄이 없으면 201 이어도 브라우저는 실패로 본다(행은 저장되는데 프론트는 에러)
 - **`Origin` 헤더가 없는 요청은 CORS 요청이 아니라서 그대로 통과**한다(`isCorsRequest` false) — `.http`·curl·Next 서버(F7)는 영향 없음. CORS 는 남용 방어가 아니다
-- 설정이 없는 경로는 건너뛴다(`Skip: no CORS configuration has been provided`). 사전 요청은 Spring 이 대신 답하지만(`PreFlightHttpRequestHandler`) 허락 헤더가 없다 — 지금의 `POST` 상태
+- 설정이 없는 경로는 건너뛴다(`Skip: no CORS configuration has been provided`). 사전 요청은 Spring 이 대신 답하지만(`PreFlightHttpRequestHandler`) 허락 헤더가 없다 — 2-2 전의 `POST` 상태(2-0 · 2-1 의 ⑮)
 - ⚠️ **`@EnableWebMvc` 를 붙이지 않는다** — `WebMvcConfigurer` 만 구현한다. 붙이면 Boot 의 MVC 자동 설정 전체가 꺼진다(`WebMvcAutoConfiguration` 의 `@ConditionalOnMissingBean(WebMvcConfigurationSupport)`)
 
 **결정** (2026-11-03 사용자 결정)
@@ -78,7 +78,7 @@
   - ⚠️ **"기본값 없음"이 막는 건 줄이 없을 때뿐** — 줄은 있는데 **값이 비면**(`=`) 배열 `[]` 로 기동은 성공하고, Origin 이 붙은 요청만 전부 403(⑬ ⑮) · Origin 없는 요청(⑦ · 헬스 체크)은 200 이라 서버 쪽에선 멀쩡해 보인다. 공백만(`[""]`) 도 같다(변환 실측 · 앱은 미측정). **생성자 검사 코드는 넣지 않는다**(2026-11-05 사용자 결정 — 드문 실수 · 연동 단계에서 바로 드러난다). 대신 `.env.example` 에 적고, **배포 확인 때 ⑬(Origin 붙인 요청) 하나로 본다**
 - **경로** — 두 경로를 정확히, 각자 쓰는 것만: `/api/participants` 는 `POST` + `Content-Type` 헤더 · `/api/participants/count` 는 `GET`. `/api/participants/**` ✗ · `/api/**` ✗(F7 `/results` 는 CORS 불필요). 쿠키·로그인이 없어 `allowCredentials` 는 기본값(꺼짐)
 
-**진행 상황** (2026-11-04)
+**진행 상황** (2026-11-05)
 
 | | 할 일 | 누가 | 검증 |
 | --- | --- | --- | --- |
