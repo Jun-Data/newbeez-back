@@ -7,7 +7,7 @@
 > - 작업 규칙(역할·커밋·브랜치·스택 주의점) → [CLAUDE.md](CLAUDE.md)
 > - 프론트 진행 상황 → 프론트 레포 `HANDOFF.md`
 
-**마지막 업데이트: 2026-11-05 (데스크톱)** — **F6-5 CORS 2단계(코드) 완료 · 다음 3 테스트** — 아래 F6-5 절 진행 표. ⚠️ `feat/cors` 를 받는 PC 는 `.env` 에 `NEWBEEZ_CORS_ALLOWED_ORIGINS` 줄이 있어야 앱·테스트가 뜬다(아래 F6-1 표). F6-4 완료(PR #7 · `009796a` — 참여자 수 API + 10초 Caffeine 캐시). F7 설계는 2026-10-20 확정 · Flyway 는 첫 배포 전 F6.5
+**마지막 업데이트: 2026-11-05 (데스크톱 → 노트북으로 이동)** — **F6-5 CORS 3단계(테스트) 시작 · 노트북에서 3-1a 부터** — 아래 F6-5 절 진행 표. ⚠️ **노트북은 `.env` 에 `NEWBEEZ_CORS_ALLOWED_ORIGINS=http://localhost:3000` 줄부터 추가**(아래 F6-1 표 ⬜) — 없으면 앱·테스트가 뜨지 않는다. 데스크톱에는 미완성 테스트 stash 1개(진행 표 3-1a). F6-4 완료(PR #7 · `009796a` — 참여자 수 API + 10초 Caffeine 캐시). F7 설계는 2026-10-20 확정 · Flyway 는 첫 배포 전 F6.5
 🔀 **브랜치** — F6-5 는 `feat/cors` 에서 한다. 슬라이스 끝에 PR 하나 · `main` 에 직접 커밋·push 하지 않는다 — PR 로만 ([CLAUDE.md](CLAUDE.md))
 
 ### ▶ 다른 PC에서 이어갈 때
@@ -89,8 +89,21 @@
 | 2-1 | `CorsConfig` + **GET count 규칙 하나** · 출처는 코드에 직접 — 헤더가 생기고, 다른 출처는 403 | 사용자 | ✅ `dbb69ef` — ⑬ 200 + `Access-Control-Allow-Origin: http://localhost:3000` · ⑭ **403** `Invalid CORS request` · ⑦ 200 그대로 · ⑮ 변화 없음(규칙 없는 경로) · ⑬⑭⑦ 에 `Vary` 3개가 새로 붙음 |
 | 2-2 | **POST 규칙** 추가 — `OPTIONS` 사전 요청에 허락 헤더 | 사용자 | ✅ `e5af8d0` — ⑮ 200 + Allow-Origin · Allow-Methods `POST` · Allow-Headers `content-type` · Max-Age `1800`(`Allow:` 줄은 그대로) · ⑰ DELETE **403** · ⑱ content-type + x-debug **200**(x-debug 빠짐 — 위 "헤더는 다르다") · ⑲ x-debug 만 **403** · ⑯ 201 + Allow-Origin(사전 요청용 헤더 없음) · count 9 → 11(⑯ 두 번 전송) |
 | 2-3 | 출처를 **환경변수로** — `yml` · `@Value` · `.env`. `.env` 한 줄 전에 테스트가 기동 실패하는지(기본값 없음 확인) → 넣은 뒤 2-1·2-2 와 같은 결과 | 사용자 | ✅ `d87c480` — `.env` 줄 없이 test **12건 실패** · 원인 하나(`corsConfig` ← `Could not resolve placeholder 'NEWBEEZ_CORS_ALLOWED_ORIGINS' … <-- "${newbeez.cors.allowed-origins}"` · 나머지 10건은 failure threshold) → 줄 추가 후 **12건 통과**(컴파일 up-to-date · `.env` 만 다름) · ⑬ 200 · ⑭ 403 · ⑮ 허락 헤더 4개 = 2-1·2-2 와 같음 · 실험: 쉼표 뒤 공백 → 잘림(⑬⑭ 200) · 빈 값 → 기동 성공 · ⑬⑮ 403(위 "값을 둘 곳") · 끝나고 `.env` 원래 값(⑭ 다시 403) |
-| 3 | 테스트 — 상태 코드만이 아니라 **허락 헤더 값**까지 본다(⑱ 은 200 이어도 x-debug 가 빠진다) | 사용자 | ⬜ **← 다음** |
+| 3 | 테스트 — 새 파일 `CorsConfigTest` · **`.http` 한 블록 = 테스트 하나** · 상태 코드만이 아니라 **허락 헤더 값**까지 본다(⑱ 은 200 이어도 x-debug 가 빠진다) · **하나 치고 이 클래스만 실행**(`./gradlew test --tests CorsConfigTest` 또는 클래스 옆 ▶) · 실행 전에 결과를 예측해 적는다 · 새 개념마다 실패를 한 번 본다(아래 "3단계 메모") | 사용자(코드·실행) · Claude(결과 XML 확인) | 🟡 **진행 중** |
+| 3-1a | 뼈대 + ⑬ — `@SpringBootTest(properties = "newbeez.cors.allowed-origins=" + CorsConfigTest.ALLOWED)` 로 허용 출처를 **테스트가 고정**(PC 마다 다른 `.env` 에 기대지 않는다) · `@AutoConfigureMockMvc` · `static final String ALLOWED` · `@Autowired MockMvcTester mvc` · ⑬ GET count → 200 + Allow-Origin | 사용자 | 🟡 **← 다음** — 데스크톱에서 1~11줄(패키지 · import 2개 · 주석 · 애너테이션 2개 · 빈 클래스)까지 쳤다가 PC 이동으로 stash. **노트북에서 새로 친다** · 기대 1건 통과 |
+| 3-1b | 덮어쓰기 증명 — 3-1a 는 테스트 값과 `.env` 가 둘 다 3000 이라 통과해도 어느 쪽 덕인지 모른다 → `ALLOWED` 를 4000 으로 바꿔 실행(통과 = 테스트 값이 쓰인다) → 그 상태에서 `properties` 의 `=` 를 지워 실행(실패 = `.env` 의 3000 이 쓰인다 · 데스크톱 첫 입력이 실제로 `=` 가 빠져 있었다) → 둘 다 되돌린다 | 사용자 | ⬜ |
+| 3-1c | ⑭ — ⑬ 을 복사해 세 곳만: `OTHER`(3001) · `hasStatus(HttpStatus.FORBIDDEN)` · `doesNotContainHeader(ACCESS_CONTROL_ALLOW_ORIGIN)` | 사용자 | ⬜ 2건 통과 → 커밋 |
+| 3-2 | ⑮ 사전 요청(`mvc.options()` + `Access-Control-Request-Method/Headers` → 허락 헤더 4개) · ⑯ POST(201 + Allow-Origin) + 클래스에 `@Transactional`(행 롤백) | 사용자 | ⬜ |
+| 3-3 | ⑰ DELETE 403 · ⑱ 200 + Allow-Headers `content-type` · ⑲ 403 | 사용자 | ⬜ |
+| 3-4 | 빨간불 — `CorsConfig` 의 `.allowedHeaders("Content-Type")` 을 지우면 어느 테스트가 깨질지 **예측** → 실행 → 복구 → 전체 `./gradlew test`(기존 12 + 7 = 19건) | 사용자 | ⬜ |
 | 4 | HANDOFF 정리 · PR | Claude | ⬜ |
+
+**3단계 메모** (2026-11-05 데스크톱)
+- **데스크톱(`jun98`)에 stash 1개** — `stash@{0}: F6-5 3-1a WIP CorsConfigTest (lines 1-11, does not compile yet)`. 노트북에서 새로 쳐서 push 했으면, 데스크톱에 돌아와 `git pull` 한 뒤 **`git stash drop`**(pop ✗ — 같은 이름의 파일과 부딪힌다)
+- `assertThat` 은 Alt+Enter 후보 중 **`org.assertj.core.api.Assertions`** 를 고른다 — Hamcrest `MatcherAssert.assertThat` 도 뜨지만 컴파일 오류. `mvc.get()…` 이 돌려주는 요청 빌더가 AssertJ `AssertProvider<MvcTestResultAssert>` 를 구현해서 이어지는 것이다(spring-test 7.0.8 javap). 요청은 `assertThat` 이 검사를 시작할 때 실행된다
+- 클래스에 `public` 을 붙이지 않는다(기존 테스트와 같게 · JUnit 5 는 `private` 만 아니면 된다)
+- 이 클래스는 `properties` 가 달라 기존 테스트와 **앱(컨텍스트)을 따로 하나 더** 띄운다. 덮어쓴 키는 `application.yml` 의 `${NEWBEEZ_CORS_ALLOWED_ORIGINS}` 를 아예 읽지 않는다(지연 해석 · 2-3)
+- **설명 상태** — 1~11줄의 개념(package · import · 애너테이션 문법 · `@Retention` · 상수식 · 범위 · 설정 우선순위 · `@AutoConfigureMockMvc`)을 설명했다. 사용자가 `@SpringBootTest` 를 "테스트 메서드라는 표시"로 이해하고 있어 정정함 — **`@Test`(메서드 · JUnit 이 읽음) vs `@SpringBootTest`(클래스 · "테스트 전에 앱을 켜라")**. `.http` 의 손 동작에 대응시키면 통했다: `bootRun` = `@SpringBootTest` · `.env` 값 = `properties` · 8080 포트 대신 = `@AutoConfigureMockMvc` · ▶ 한 번 = `@Test` 메서드 하나 · 눈으로 확인 = `assertThat`. **확인 질문 2개 답 대기**: ① 테스트가 두 개면 Spring 은 앱을 몇 번 켜나(1번 — 같은 클래스는 한 번 켠 앱을 같이 쓴다) ② `@SpringBootTest` 없이 `@Test` 만 있으면(`mvc` 가 `null` → `NullPointerException` · 아래 "📌 함정 모음 › 테스트"의 노트북 정정과 같다 · `@AutoConfigureMockMvc` 에는 `@ExtendWith(SpringExtension)` 이 없다 — javap)
 
 ---
 
