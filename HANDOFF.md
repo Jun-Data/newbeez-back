@@ -7,7 +7,7 @@
 > - 작업 규칙(역할·커밋·브랜치·스택 주의점) → [CLAUDE.md](CLAUDE.md)
 > - 프론트 진행 상황 → 프론트 레포 `HANDOFF.md`
 
-**마지막 업데이트: 2026-11-09 (데스크톱)** — **설계 검토 결정 반영**: `participant_logs` 인덱스 `(category_slug, created_at)` · `createdAt` 초 단위 · 인물 기준일 감독·스타 따로 · 참여 기록 남용은 MVP 감수(프론트 브랜치 `docs/review-decisions-2026-11-09` · PR 전 · 아래 F6.5 절). **F6-5 CORS 는 데스크톱에서 3-1a 부터 이어간다** — `CorsConfigTest.java` 1~11줄이 staged 다(`ALLOWED` 가 없어 아직 컴파일 안 됨). ⚠️ **노트북은 `.env` 에 `NEWBEEZ_CORS_ALLOWED_ORIGINS=http://localhost:3000` 줄부터 추가**(아래 F6-1 표 ⬜) — 없으면 앱·테스트가 뜨지 않는다. F6-4 완료(PR #7 · `009796a` — 참여자 수 API + 10초 Caffeine 캐시). F7 설계는 2026-10-20 확정이나 **팀 소개를 어디에 둘지 재검토 중**(아래 F6.5 절 ⏸) · Flyway 는 첫 배포 전 F6.5
+**마지막 업데이트: 2026-11-09 (데스크톱)** — 설계 검토 결정 반영(아래 F6.5 절 · 프론트 브랜치 `docs/review-decisions-2026-11-09` PR 전) · D1 체크리스트 추가(맨 아래 "그 외"). **F6-5 CORS 는 데스크톱에서 3-1a 부터** — `CorsConfigTest.java` 1~11줄 staged(아직 컴파일 안 됨). ⚠️ **노트북은 `.env` 에 `NEWBEEZ_CORS_ALLOWED_ORIGINS=http://localhost:3000` 줄부터 추가**(아래 F6-1 표 ⬜) — 없으면 앱·테스트가 뜨지 않는다. F7 팀 소개 위치는 재검토 중(F6.5 절 ⏸)
 🔀 **브랜치** — F6-5 는 `feat/cors` 에서 한다. 슬라이스 끝에 PR 하나 · `main` 에 직접 커밋·push 하지 않는다 — PR 로만 ([CLAUDE.md](CLAUDE.md))
 
 ### ▶ 다른 PC에서 이어갈 때
@@ -90,7 +90,7 @@
 | 2-2 | **POST 규칙** 추가 — `OPTIONS` 사전 요청에 허락 헤더 | 사용자 | ✅ `e5af8d0` — ⑮ 200 + Allow-Origin · Allow-Methods `POST` · Allow-Headers `content-type` · Max-Age `1800`(`Allow:` 줄은 그대로) · ⑰ DELETE **403** · ⑱ content-type + x-debug **200**(x-debug 빠짐 — 위 "헤더는 다르다") · ⑲ x-debug 만 **403** · ⑯ 201 + Allow-Origin(사전 요청용 헤더 없음) · count 9 → 11(⑯ 두 번 전송) |
 | 2-3 | 출처를 **환경변수로** — `yml` · `@Value` · `.env`. `.env` 한 줄 전에 테스트가 기동 실패하는지(기본값 없음 확인) → 넣은 뒤 2-1·2-2 와 같은 결과 | 사용자 | ✅ `d87c480` — `.env` 줄 없이 test **12건 실패** · 원인 하나(`corsConfig` ← `Could not resolve placeholder 'NEWBEEZ_CORS_ALLOWED_ORIGINS' … <-- "${newbeez.cors.allowed-origins}"` · 나머지 10건은 failure threshold) → 줄 추가 후 **12건 통과**(컴파일 up-to-date · `.env` 만 다름) · ⑬ 200 · ⑭ 403 · ⑮ 허락 헤더 4개 = 2-1·2-2 와 같음 · 실험: 쉼표 뒤 공백 → 잘림(⑬⑭ 200) · 빈 값 → 기동 성공 · ⑬⑮ 403(위 "값을 둘 곳") · 끝나고 `.env` 원래 값(⑭ 다시 403) |
 | 3 | 테스트 — 새 파일 `CorsConfigTest` · **`.http` 한 블록 = 테스트 하나** · 상태 코드만이 아니라 **허락 헤더 값**까지 본다(⑱ 은 200 이어도 x-debug 가 빠진다) · **하나 치고 이 클래스만 실행**(`./gradlew test --tests CorsConfigTest` 또는 클래스 옆 ▶) · 실행 전에 결과를 예측해 적는다 · 새 개념마다 실패를 한 번 본다(아래 "3단계 메모") | 사용자(코드·실행) · Claude(결과 XML 확인) | 🟡 **진행 중** |
-| 3-1a | 뼈대 + ⑬ — `@SpringBootTest(properties = "newbeez.cors.allowed-origins=" + CorsConfigTest.ALLOWED)` 로 허용 출처를 **테스트가 고정**(PC 마다 다른 `.env` 에 기대지 않는다) · `@AutoConfigureMockMvc` · `static final String ALLOWED` · `@Autowired MockMvcTester mvc` · ⑬ GET count → 200 + Allow-Origin | 사용자 | 🟡 **← 다음** — 데스크톱에서 1~11줄(패키지 · import 2개 · 주석 · 애너테이션 2개 · 빈 클래스)까지 쳤다. 2026-11-09 데스크톱: stash 없이 이 파일이 staged · origin 은 11-05 그대로(노트북에서 push 한 것 없음) → **데스크톱에서 이어 친다** · 기대 1건 통과 |
+| 3-1a | 뼈대 + ⑬ — `@SpringBootTest(properties = "newbeez.cors.allowed-origins=" + CorsConfigTest.ALLOWED)` 로 허용 출처를 **테스트가 고정**(PC 마다 다른 `.env` 에 기대지 않는다) · `@AutoConfigureMockMvc` · `static final String ALLOWED` · `@Autowired MockMvcTester mvc` · ⑬ GET count → 200 + Allow-Origin | 사용자 | 🟡 **← 다음** — 1~11줄(패키지 · import 2개 · 주석 · 애너테이션 2개 · 빈 클래스)까지 쳐서 데스크톱에 staged(2026-11-09 · 노트북에서 push 한 것 없음) → **데스크톱에서 이어 친다** · 기대 1건 통과 |
 | 3-1b | 덮어쓰기 증명 — 3-1a 는 테스트 값과 `.env` 가 둘 다 3000 이라 통과해도 어느 쪽 덕인지 모른다 → `ALLOWED` 를 4000 으로 바꿔 실행(통과 = 테스트 값이 쓰인다) → 그 상태에서 `properties` 의 `=` 를 지워 실행(실패 = `.env` 의 3000 이 쓰인다 · 데스크톱 첫 입력이 실제로 `=` 가 빠져 있었다) → 둘 다 되돌린다 | 사용자 | ⬜ |
 | 3-1c | ⑭ — ⑬ 을 복사해 세 곳만: `OTHER`(3001) · `hasStatus(HttpStatus.FORBIDDEN)` · `doesNotContainHeader(ACCESS_CONTROL_ALLOW_ORIGIN)` | 사용자 | ⬜ 2건 통과 → 커밋 |
 | 3-2 | ⑮ 사전 요청(`mvc.options()` + `Access-Control-Request-Method/Headers` → 허락 헤더 4개) · ⑯ POST(201 + Allow-Origin) + 클래스에 `@Transactional`(행 롤백) | 사용자 | ⬜ |
@@ -99,7 +99,7 @@
 | 4 | HANDOFF 정리 · PR | Claude | ⬜ |
 
 **3단계 메모** (2026-11-05 데스크톱)
-- **데스크톱(`jun98`)의 stash 는 이미 꺼내져 있다**(2026-11-09 확인 · `git stash list` 비어 있음) — `CorsConfigTest.java` 1~11줄이 staged 다. 노트북에도 3-1a 를 쳐 두었다면 한쪽만 남긴다(같은 파일이라 둘 다 커밋하면 부딪힌다)
+- 데스크톱 stash 는 이미 꺼냈다(2026-11-09) — 노트북에도 3-1a 를 쳐 두었다면 한쪽만 남긴다
 - `assertThat` 은 Alt+Enter 후보 중 **`org.assertj.core.api.Assertions`** 를 고른다 — Hamcrest `MatcherAssert.assertThat` 도 뜨지만 컴파일 오류. `mvc.get()…` 이 돌려주는 요청 빌더가 AssertJ `AssertProvider<MvcTestResultAssert>` 를 구현해서 이어지는 것이다(spring-test 7.0.8 javap). 요청은 `assertThat` 이 검사를 시작할 때 실행된다
 - 클래스에 `public` 을 붙이지 않는다(기존 테스트와 같게 · JUnit 5 는 `private` 만 아니면 된다)
 - 이 클래스는 `properties` 가 달라 기존 테스트와 **앱(컨텍스트)을 따로 하나 더** 띄운다. 덮어쓴 키는 `application.yml` 의 `${NEWBEEZ_CORS_ALLOWED_ORIGINS}` 를 아예 읽지 않는다(지연 해석 · 2-3)
@@ -242,9 +242,9 @@ create index idx_created on participant_logs (created_at);
 **✅ `V1` 에 넣을 것** (2026-11-09 사용자 결정 · 원본은 프론트 ARCHITECTURE §5.2 · 코드는 F6.5 에서 사용자가 친다 — F6-5 CORS 와 섞지 않는다)
 - **`createdAt` 은 초 단위로 자른다** — 생성자에서 `Instant.now().truncatedTo(ChronoUnit.SECONDS)`(`import java.time.temporal.ChronoUnit`). `datetime(0)` 이 반올림해서 저장한 Java 객체와 DB 값의 초가 달라지는 것을 막는다
 - **인덱스 `idx_created (created_at)` → `idx_cat_created (category_slug, created_at)`** — 엔티티 `@Index` 와 `V1` 의 `create index` 를 같은 모양으로. 쿼리가 전부 `category_slug` 로 시작한다(참여자 수 · 팀 순위 · 기간별 분석). 로컬 표는 위 함정대로 PC 마다 지우고 다시 만들 때 같이 바뀐다(`update` 는 옛 인덱스를 지우지 않는다)
-- ⚠️ **`created_at` 은 `datetime(0)` — `timestamp` ✗**. KST PC 에서도 UTC 로 저장되는 것은 Hibernate 7.4 가 `Instant` 를 UTC 달력으로 바인딩하기 때문이고, 이 보장은 `DATETIME` 일 때만 성립한다. `TIMESTAMP` 는 서버가 세션 시간대로 다시 해석해 시간대가 다른 운영 DB 에서 오프셋만큼 어긋난다. `NOW()`·수동 INSERT 는 이 보장 밖이다(세션 시간대를 따른다) — 2026-11-09 hibernate-core 7.4.1 · Connector/J 9.7.0 jar 확인
+- ⚠️ **`created_at` 은 `datetime(0)` 유지 — `timestamp` ✗** — Hibernate 의 UTC 바인딩은 `DATETIME` 에서만 UTC 저장을 보장한다(2026-11-09 jar 확인)
 
-**⏸ F7 팀 소개를 어디에 둘지 재검토 중** (2026-11-09 · 사용자 결정 대기) — A 프론트 `lib/` 로 옮기고 `team_results`·`GET /results` 를 만들지 않는다 · B 백엔드에 두되 `generateStaticParams` 빈 배열로 빌드 결합만 끊는다 · C 지금 설계. Claude 추천은 A — 학습용 서버에 실제 사이트 배포를 묶지 않는다. B 는 Vercel ISR 캐시가 배포마다 비어, 백엔드가 죽은 채 배포하면 첫 방문자가 500 을 본다(`fetch` 에 `force-cache` 를 명시하면 일부 완화 · 2026-11-09 Next 16.2.6 소스 확인). 호스팅 후보로 학습용 AWS 도 검토 중(미정 · 프론트 FUTURE §4 는 AWS Free plan 을 "피할 것"으로 분류)
+**⏸ F7 팀 소개 위치 재검토 중** (2026-11-09 · 사용자 결정 대기) — A 프론트 `lib/` 로 이동(추천 · 학습용 서버에 사이트 배포를 묶지 않는다) · B 백엔드 유지 + 빌드 때 안 부르기(배포 직후 백엔드가 죽어 있으면 첫 방문 500) · C 지금 설계. 호스팅 후보로 학습용 AWS 검토 중(FUTURE §4 는 AWS Free plan 을 "피할 것"으로 분류)
 
 **스키마·칸 설명·검증 규칙의 원본은 프론트 ARCHITECTURE §5.1** (여기에 복사하지 않는다). 백엔드가 알아야 할 것만:
 
@@ -337,7 +337,13 @@ create index idx_created on participant_logs (created_at);
 
 - **로컬 DB**: MySQL 8.0.x · `MySQL80` 서비스 · DB `newbeez` — **PC마다 따로 있고 내용이 오가지 않는다**(위 F6-1 표). ⚠️ 8.0 은 2026-04-30 에 지원이 끝난 버전이다. 로컬 학습용으론 문제없지만 **배포 DB는 8.4 이상**으로 고른다
 - **배포처**: 1순위 Oracle Cloud Always Free 서울(A1 + MySQL HeatWave 50GB). **결정은 D1 에서** — A1 확보가 복불복이라 미리 시도 권장. 근거는 프론트 `docs/FUTURE.md` §4. ⚠️ **필수 조건(2026-10-27): 유휴 회수가 없을 것** — Always Free 그대로면 7일 유휴 시 회수되므로 PAYG 전환이나 다른 호스팅이 필요하다(F7 이후 결과 페이지 빌드가 백엔드에 의존)
-- **D1 준비물** — Docker 28.5.2 가 `jun98` PC 에 있다(Dockerfile 시험 가능) · 레포에 Dockerfile 은 아직 없다 · `./gradlew build` 가 만드는 실행용 jar(`build/libs/newbeez-back-0.0.1-SNAPSHOT.jar` · 약 55MB · 라이브러리 포함)가 컨테이너에 넣을 파일이다. `-plain.jar` 는 우리 코드만이라 혼자 실행되지 않는다
+- **D1 준비물** — Docker 28.5.2 가 `jun98` PC 에 있다(Dockerfile 시험 가능) · 레포에 Dockerfile 은 아직 없다 · `./gradlew bootJar` 가 만드는 실행용 jar(`build/libs/newbeez-back-0.0.1-SNAPSHOT.jar` · 약 55MB · 라이브러리 포함 · 테스트를 안 돌려 DB 없이 만들어진다)가 컨테이너에 넣을 파일이다. `-plain.jar` 는 우리 코드만이라 혼자 실행되지 않는다
 - **D1 배포 확인에 넣을 것** — 운영 환경변수에 `NEWBEEZ_CORS_ALLOWED_ORIGINS`(운영 프론트 주소 · 로컬 주소는 빼도 된다)를 넣고, 띄운 뒤 **`Origin: <운영 프론트 주소>` 를 붙인 GET count(⑬ 모양)** 를 보내 `Access-Control-Allow-Origin` 이 오는지 본다 — 값이 비어 있으면 Origin 없는 확인(헬스 체크)은 200 이라 놓친다(F6-5 2-3 실측)
+- **D1 체크리스트** (2026-11-09 jar·공식 문서 검증 — 근거는 그날 커밋 본문)
+  - **이미지** — `./gradlew bootJar` · `.dockerignore` 에 `build/`·`.env`(없으면 낡은 `-plain.jar` 가 따라 들어가 `COPY *.jar` 가 깨진다) · `ENTRYPOINT` 는 exec form `["java","-jar",…]`(shell form 은 SIGTERM 을 못 받는다) · arm64 서버(Oracle A1 · AWS Graviton)면 `docker buildx build --platform linux/arm64`
+  - **종료** — graceful 은 Boot 3.4 부터 기본값이라 설정하지 않는다. `docker stop` 유예 10초가 Boot 대기 30초보다 짧으니 한쪽을 맞춘다
+  - **헬스** — `spring-boot-starter-actuator` 한 줄이면 `/actuator/health`(DB 가 죽으면 503 · 노출 기본값이 이미 health 뿐). ⚠️ DB 가 꺼진 채 기동하면 503 이 아니라 앱이 안 뜬다 → 호스팅 자동 재시작 설정과 함께 본다
+  - **시간대** — 운영 JDBC URL 끝에 `?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true`(`NOW()`·수동 INSERT 까지 UTC) · `hibernate.jdbc.time_zone` 은 넣지 않는다 · 배포 뒤 1회 실측
+  - **Testcontainers 는 F6.5 뒤** — 좌표는 2.x 이름(`org.testcontainers:testcontainers-mysql`) · 로컬 MySQL 대신 Docker 가 필요해진다
 - **락인 방어(지금부터 적용)**: 컨테이너화 · DB 접속은 환경변수로만 · Flyway · 트리거/프로시저 금지
 - **Instagram 임베드 테스트 페이지** `C:\dev\embed-test\index.html` (`이현준` PC · git 밖) — 327px 본문에 게시물/캡션/계정 카드 3종을 띄우고 렌더 시간·크기를 재는 정적 HTML. `python -m http.server 8000 --bind 127.0.0.1 --directory C:\dev\embed-test` 로 열람. 2026-10-20 PC 크롬 확인 · 아이폰 카톡 인앱은 사용자가 확인함(노트북 기록 · 프론트 §9 #6 반영은 위 "프론트에 넘길 것")
