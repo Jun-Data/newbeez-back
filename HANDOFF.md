@@ -7,7 +7,7 @@
 > - 작업 규칙(역할·커밋·브랜치·스택 주의점) → [CLAUDE.md](CLAUDE.md)
 > - 프론트 진행 상황 → 프론트 레포 `HANDOFF.md`
 
-**마지막 업데이트: 2026-11-05 (데스크톱 → 노트북으로 이동)** — **F6-5 CORS 3단계(테스트) 시작 · 노트북에서 3-1a 부터** — 아래 F6-5 절 진행 표. ⚠️ **노트북은 `.env` 에 `NEWBEEZ_CORS_ALLOWED_ORIGINS=http://localhost:3000` 줄부터 추가**(아래 F6-1 표 ⬜) — 없으면 앱·테스트가 뜨지 않는다. 데스크톱에는 미완성 테스트 stash 1개(진행 표 3-1a). F6-4 완료(PR #7 · `009796a` — 참여자 수 API + 10초 Caffeine 캐시). F7 설계는 2026-10-20 확정 · Flyway 는 첫 배포 전 F6.5
+**마지막 업데이트: 2026-11-09 (데스크톱)** — **설계 검토 결정 반영**: `participant_logs` 인덱스 `(category_slug, created_at)` · `createdAt` 초 단위 · 인물 기준일 감독·스타 따로 · 참여 기록 남용은 MVP 감수(프론트 브랜치 `docs/review-decisions-2026-11-09` · PR 전 · 아래 F6.5 절). **F6-5 CORS 는 데스크톱에서 3-1a 부터 이어간다** — `CorsConfigTest.java` 1~11줄이 staged 다(`ALLOWED` 가 없어 아직 컴파일 안 됨). ⚠️ **노트북은 `.env` 에 `NEWBEEZ_CORS_ALLOWED_ORIGINS=http://localhost:3000` 줄부터 추가**(아래 F6-1 표 ⬜) — 없으면 앱·테스트가 뜨지 않는다. F6-4 완료(PR #7 · `009796a` — 참여자 수 API + 10초 Caffeine 캐시). F7 설계는 2026-10-20 확정이나 **팀 소개를 어디에 둘지 재검토 중**(아래 F6.5 절 ⏸) · Flyway 는 첫 배포 전 F6.5
 🔀 **브랜치** — F6-5 는 `feat/cors` 에서 한다. 슬라이스 끝에 PR 하나 · `main` 에 직접 커밋·push 하지 않는다 — PR 로만 ([CLAUDE.md](CLAUDE.md))
 
 ### ▶ 다른 PC에서 이어갈 때
@@ -90,7 +90,7 @@
 | 2-2 | **POST 규칙** 추가 — `OPTIONS` 사전 요청에 허락 헤더 | 사용자 | ✅ `e5af8d0` — ⑮ 200 + Allow-Origin · Allow-Methods `POST` · Allow-Headers `content-type` · Max-Age `1800`(`Allow:` 줄은 그대로) · ⑰ DELETE **403** · ⑱ content-type + x-debug **200**(x-debug 빠짐 — 위 "헤더는 다르다") · ⑲ x-debug 만 **403** · ⑯ 201 + Allow-Origin(사전 요청용 헤더 없음) · count 9 → 11(⑯ 두 번 전송) |
 | 2-3 | 출처를 **환경변수로** — `yml` · `@Value` · `.env`. `.env` 한 줄 전에 테스트가 기동 실패하는지(기본값 없음 확인) → 넣은 뒤 2-1·2-2 와 같은 결과 | 사용자 | ✅ `d87c480` — `.env` 줄 없이 test **12건 실패** · 원인 하나(`corsConfig` ← `Could not resolve placeholder 'NEWBEEZ_CORS_ALLOWED_ORIGINS' … <-- "${newbeez.cors.allowed-origins}"` · 나머지 10건은 failure threshold) → 줄 추가 후 **12건 통과**(컴파일 up-to-date · `.env` 만 다름) · ⑬ 200 · ⑭ 403 · ⑮ 허락 헤더 4개 = 2-1·2-2 와 같음 · 실험: 쉼표 뒤 공백 → 잘림(⑬⑭ 200) · 빈 값 → 기동 성공 · ⑬⑮ 403(위 "값을 둘 곳") · 끝나고 `.env` 원래 값(⑭ 다시 403) |
 | 3 | 테스트 — 새 파일 `CorsConfigTest` · **`.http` 한 블록 = 테스트 하나** · 상태 코드만이 아니라 **허락 헤더 값**까지 본다(⑱ 은 200 이어도 x-debug 가 빠진다) · **하나 치고 이 클래스만 실행**(`./gradlew test --tests CorsConfigTest` 또는 클래스 옆 ▶) · 실행 전에 결과를 예측해 적는다 · 새 개념마다 실패를 한 번 본다(아래 "3단계 메모") | 사용자(코드·실행) · Claude(결과 XML 확인) | 🟡 **진행 중** |
-| 3-1a | 뼈대 + ⑬ — `@SpringBootTest(properties = "newbeez.cors.allowed-origins=" + CorsConfigTest.ALLOWED)` 로 허용 출처를 **테스트가 고정**(PC 마다 다른 `.env` 에 기대지 않는다) · `@AutoConfigureMockMvc` · `static final String ALLOWED` · `@Autowired MockMvcTester mvc` · ⑬ GET count → 200 + Allow-Origin | 사용자 | 🟡 **← 다음** — 데스크톱에서 1~11줄(패키지 · import 2개 · 주석 · 애너테이션 2개 · 빈 클래스)까지 쳤다가 PC 이동으로 stash. **노트북에서 새로 친다** · 기대 1건 통과 |
+| 3-1a | 뼈대 + ⑬ — `@SpringBootTest(properties = "newbeez.cors.allowed-origins=" + CorsConfigTest.ALLOWED)` 로 허용 출처를 **테스트가 고정**(PC 마다 다른 `.env` 에 기대지 않는다) · `@AutoConfigureMockMvc` · `static final String ALLOWED` · `@Autowired MockMvcTester mvc` · ⑬ GET count → 200 + Allow-Origin | 사용자 | 🟡 **← 다음** — 데스크톱에서 1~11줄(패키지 · import 2개 · 주석 · 애너테이션 2개 · 빈 클래스)까지 쳤다. 2026-11-09 데스크톱: stash 없이 이 파일이 staged · origin 은 11-05 그대로(노트북에서 push 한 것 없음) → **데스크톱에서 이어 친다** · 기대 1건 통과 |
 | 3-1b | 덮어쓰기 증명 — 3-1a 는 테스트 값과 `.env` 가 둘 다 3000 이라 통과해도 어느 쪽 덕인지 모른다 → `ALLOWED` 를 4000 으로 바꿔 실행(통과 = 테스트 값이 쓰인다) → 그 상태에서 `properties` 의 `=` 를 지워 실행(실패 = `.env` 의 3000 이 쓰인다 · 데스크톱 첫 입력이 실제로 `=` 가 빠져 있었다) → 둘 다 되돌린다 | 사용자 | ⬜ |
 | 3-1c | ⑭ — ⑬ 을 복사해 세 곳만: `OTHER`(3001) · `hasStatus(HttpStatus.FORBIDDEN)` · `doesNotContainHeader(ACCESS_CONTROL_ALLOW_ORIGIN)` | 사용자 | ⬜ 2건 통과 → 커밋 |
 | 3-2 | ⑮ 사전 요청(`mvc.options()` + `Access-Control-Request-Method/Headers` → 허락 헤더 4개) · ⑯ POST(201 + Allow-Origin) + 클래스에 `@Transactional`(행 롤백) | 사용자 | ⬜ |
@@ -99,7 +99,7 @@
 | 4 | HANDOFF 정리 · PR | Claude | ⬜ |
 
 **3단계 메모** (2026-11-05 데스크톱)
-- **데스크톱(`jun98`)에 stash 1개** — `stash@{0}: F6-5 3-1a WIP CorsConfigTest (lines 1-11, does not compile yet)`. 노트북에서 새로 쳐서 push 했으면, 데스크톱에 돌아와 `git pull` 한 뒤 **`git stash drop`**(pop ✗ — 같은 이름의 파일과 부딪힌다)
+- **데스크톱(`jun98`)의 stash 는 이미 꺼내져 있다**(2026-11-09 확인 · `git stash list` 비어 있음) — `CorsConfigTest.java` 1~11줄이 staged 다. 노트북에도 3-1a 를 쳐 두었다면 한쪽만 남긴다(같은 파일이라 둘 다 커밋하면 부딪힌다)
 - `assertThat` 은 Alt+Enter 후보 중 **`org.assertj.core.api.Assertions`** 를 고른다 — Hamcrest `MatcherAssert.assertThat` 도 뜨지만 컴파일 오류. `mvc.get()…` 이 돌려주는 요청 빌더가 AssertJ `AssertProvider<MvcTestResultAssert>` 를 구현해서 이어지는 것이다(spring-test 7.0.8 javap). 요청은 `assertThat` 이 검사를 시작할 때 실행된다
 - 클래스에 `public` 을 붙이지 않는다(기존 테스트와 같게 · JUnit 5 는 `private` 만 아니면 된다)
 - 이 클래스는 `properties` 가 달라 기존 테스트와 **앱(컨텍스트)을 따로 하나 더** 띄운다. 덮어쓴 키는 `application.yml` 의 `${NEWBEEZ_CORS_ALLOWED_ORIGINS}` 를 아예 읽지 않는다(지연 해석 · 2-3)
@@ -239,9 +239,12 @@ create index idx_created on participant_logs (created_at);
 
 ⚠️ **F6.5 함정 — 로컬 테이블은 Hibernate(`ddl-auto=update`)가 만들었다.** Flyway `V1__participant_logs.sql` 의 `create table` 이 "이미 있음"으로 실패한다 → 로컬 `participant_logs` 를 지우고 Flyway 가 만들게 하거나 baseline 설정. PC 마다 한 번씩(DB 가 PC 별로 따로라서)
 
-**⏸ `V1` 을 쓰기 전에 정할 것** (노트북 2026-10-27·11-02 · 사용자 결정 대기)
-- `createdAt` 을 Java 에서 **초 단위로 자를지** — `datetime(0)` 이 반올림하므로 저장한 Java 객체의 값과 DB 에 들어간 값의 초가 다를 수 있다
-- **`(category_slug, created_at)` 인덱스**를 둘지 — 지금은 `(category_slug, result_slug)` · `(created_at)` 두 개
+**✅ `V1` 에 넣을 것** (2026-11-09 사용자 결정 · 원본은 프론트 ARCHITECTURE §5.2 · 코드는 F6.5 에서 사용자가 친다 — F6-5 CORS 와 섞지 않는다)
+- **`createdAt` 은 초 단위로 자른다** — 생성자에서 `Instant.now().truncatedTo(ChronoUnit.SECONDS)`(`import java.time.temporal.ChronoUnit`). `datetime(0)` 이 반올림해서 저장한 Java 객체와 DB 값의 초가 달라지는 것을 막는다
+- **인덱스 `idx_created (created_at)` → `idx_cat_created (category_slug, created_at)`** — 엔티티 `@Index` 와 `V1` 의 `create index` 를 같은 모양으로. 쿼리가 전부 `category_slug` 로 시작한다(참여자 수 · 팀 순위 · 기간별 분석). 로컬 표는 위 함정대로 PC 마다 지우고 다시 만들 때 같이 바뀐다(`update` 는 옛 인덱스를 지우지 않는다)
+- ⚠️ **`created_at` 은 `datetime(0)` — `timestamp` ✗**. KST PC 에서도 UTC 로 저장되는 것은 Hibernate 7.4 가 `Instant` 를 UTC 달력으로 바인딩하기 때문이고, 이 보장은 `DATETIME` 일 때만 성립한다. `TIMESTAMP` 는 서버가 세션 시간대로 다시 해석해 시간대가 다른 운영 DB 에서 오프셋만큼 어긋난다. `NOW()`·수동 INSERT 는 이 보장 밖이다(세션 시간대를 따른다) — 2026-11-09 hibernate-core 7.4.1 · Connector/J 9.7.0 jar 확인
+
+**⏸ F7 팀 소개를 어디에 둘지 재검토 중** (2026-11-09 · 사용자 결정 대기) — A 프론트 `lib/` 로 옮기고 `team_results`·`GET /results` 를 만들지 않는다 · B 백엔드에 두되 `generateStaticParams` 빈 배열로 빌드 결합만 끊는다 · C 지금 설계. Claude 추천은 A — 학습용 서버에 실제 사이트 배포를 묶지 않는다. B 는 Vercel ISR 캐시가 배포마다 비어, 백엔드가 죽은 채 배포하면 첫 방문자가 500 을 본다(`fetch` 에 `force-cache` 를 명시하면 일부 완화 · 2026-11-09 Next 16.2.6 소스 확인). 호스팅 후보로 학습용 AWS 도 검토 중(미정 · 프론트 FUTURE §4 는 AWS Free plan 을 "피할 것"으로 분류)
 
 **스키마·칸 설명·검증 규칙의 원본은 프론트 ARCHITECTURE §5.1** (여기에 복사하지 않는다). 백엔드가 알아야 할 것만:
 
