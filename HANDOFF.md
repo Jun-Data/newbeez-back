@@ -109,84 +109,33 @@
 
 ## ✅ 끝난 슬라이스 — 결론만
 
+> 계약·스키마의 원본은 프론트 ARCHITECTURE(§5·§6), 구현의 원본은 코드다. 여기에는 **코드와 설계 문서만 봐서는 모르는 이유·규칙**과 **다른 절이 가리키는 것**(F6-1 PC별 표·절차 · F6-2 비교용 SQL)만 둔다. 측정과 과정은 각 PR 의 커밋 본문에, 줄이기 전 전문은 `git show 8adc89f:HANDOFF.md` 에 있다(2026-11-09 압축 · PR 은 지금처럼 merge 커밋으로 — squash 하면 이 해시가 사라진다).
+
 ### ✅ F6-4 참여자 수 `GET /api/participants/count` — 2026-11-03 (PR #7 · `009796a`)
 
-**계약의 원본은 프론트 ARCHITECTURE §6** (2026-10-29 확정 · 10초는 2026-11-02). 백엔드가 알아야 할 것만:
+- **캐시 설정 세 가지는 조용한 실패를 드러내려고 둔 것이다 — 지우지 않는다.** `spring.cache.type: caffeine`(Caffeine 이 빠지면 오류 없이 TTL 없는 기본 캐시로 바뀌는 것을 **기동 실패**로) · `cache-names: participantCount`(`@Cacheable` 이름 오타가 **첫 요청에서** `Cannot find cache named` 로 드러난다 · 기동은 된다) · `@EnableCaching`(없으면 기동도 요청도 멀쩡한 채 `@Cacheable` 만 무시된다 — **캐시 테스트로만** 드러난다)
+- `expireAfterWrite` — `expireAfterAccess` 는 계속 읽히면 영영 갱신되지 않는다 · `sync = true` — 만료 순간 동시 요청의 `COUNT` 를 하나로 줄인다 · 10초 만료 자체는 테스트하지 않는다(`sleep` 은 느리고 흔들린다 · `.http` 로 손으로 쟀다)
+- ⚠️ **허용 목록 `"football"` 이 두 곳에 있다** — `ParticipantLogRequest`(POST) 와 Controller `count` 의 `@Pattern`. 카테고리를 더할 때 같이 고친다
+- 쿼리 값 검사는 **매개변수에 `@Pattern` 을 직접** 붙인다(Spring 내장 메서드 검사 → 400) · 클래스 수준 `@Validated` ✗(다른 검사 경로가 켜진다) · `@RequestParam` 은 Java 매개변수 이름으로 찾는다 — **매개변수 이름이 곧 API 계약**
+- **서버 로그 없는 400 = 허용 목록일 가능성** — `categorySlug` 누락은 WARN 이 찍히지만 `baseball`·빈 값은 아무것도 안 찍힌다(`HandlerMethodValidationException` 을 로그 없는 리졸버가 처리 · 7.0.8 javap)
 
-- **임계값 없음** (2026-10-29 사용자 결정) — 0 이어도 그대로 돌려준다
-- **카테고리별** — 쿼리 `categorySlug` 필수 · `POST` 와 같은 허용 목록(`football`) · 어기면 400. 전체 수(`repository.count()`)가 아니라 `category_slug` 로 거른 수를 센다
-- 응답 `200` · `{ "count": N }` — 칸 이름이 있는 객체
-- **10초 캐시** — 바이럴로 수십만 행이 쌓이면 매 요청 `COUNT(*)` 가 체감된다. 10초면 DB `COUNT` 는 방문자 수와 무관하게 분당 **최대 6번**(`sync = true` 기준)이고 숫자는 최대 10초 늦다. "1분"은 정석이 아니라 설계 때 고른 값이었다(2026-11-02 사용자 결정 · 프론트 §5·§6 은 프론트 PR #6 `78dee33` 로 고침)
-
-**만든 것** — 코드가 원본이다
-- Repository `countByCategorySlug` → Service `count`(`@Cacheable(cacheNames = "participantCount", sync = true)` + `@Transactional(readOnly = true)`) → Controller `@GetMapping("/count")`(`@RequestParam @Pattern(regexp = "football") String categorySlug`) → 응답 record `ParticipantCountResponse(long count)`
-- 캐시 설정: `build.gradle` 에 `spring-boot-starter-cache` + `caffeine`(BOM 이 3.2.4) · `application.yml` 의 `spring.cache.type: caffeine` · `cache-names: participantCount` · `caffeine.spec: expireAfterWrite=10s` · 메인 클래스에 `@EnableCaching`
-- 수동 확인 `http/participants.http` ⑦~⑫ · 테스트 5개 + `@BeforeEach`(아래)
-
-**캐시를 이렇게 둔 이유** (Boot 4.1.0 · Framework 7.0.8 jar 확인)
-- **starter 만으로는 만료가 안 된다** — 기본 캐시(`ConcurrentMapCacheManager`)에는 TTL 이 없다 → Caffeine
-- **조용한 실패를 시끄럽게 바꾼다** — ① Caffeine 이 빠지면 Boot 는 오류 없이 기본 캐시로 바꾼다(`@ConditionalOnClass(Caffeine, CaffeineCacheManager)`) → `type: caffeine` 을 적어 두면 대신 기동에서 멈춘다(`No cache manager could be auto-configured, check your configuration (caching type is 'CAFFEINE')`) ② `cache-names` 를 적으면 이름이 고정돼(`dynamic=false`) `@Cacheable` 이름 오타가 `Cannot find cache named` 로 드러난다 ③ `@EnableCaching` 이 없으면 캐시 자동 설정 전체가 꺼지고(`@ConditionalOnBean(CacheAspectSupport)`) `@Cacheable` 은 **오류 없이 무시된다** — 이건 캐시 테스트가 잡는다
-- **`sync = true`** — 만료 순간 동시에 들어온 요청이 전부 `COUNT` 를 돌리는 것(캐시 쇄도)을 하나로 줄인다(측정은 안 함)
-- **`expireAfterWrite`** — `expireAfterAccess` 는 읽을 때마다 시간이 다시 시작돼, 계속 읽히면 영영 갱신되지 않는다
-- 캐시 키는 매개변수 값(`SimpleKeyGenerator` — 매개변수 하나면 그 값) → 카테고리마다 따로 저장된다. 허용 목록 덕에 칸 수가 늘지 않는다
-
-**측정** — 5단계(캐시 전): ⑦ `6` → ① POST → ⑦ `7` · ⑧⑨⑩ 400. 6-3(캐시 후): 11:22:00 `8`(저장) → POST(DB 9) → 11:22:08 `8`(적중) → 11:22:11 `9`(만료) — `@EnableCaching`·`@Cacheable`·Caffeine·`expireAfterWrite`·10초를 한 번에 확인
-
-**테스트** — `ParticipantLogControllerTest`
-- `@BeforeEach` 캐시 비우기 — **캐시는 테스트 롤백에 묶이지 않는다**. 롤백된 행까지 센 숫자가 다음 테스트로 넘어가지 않게. `getCache` 가 `@Nullable` 이라 `Objects.requireNonNull`
-- 정상 → `200` · `{"count": DB 수}` 엄격 비교 — 정답은 `repository.countByCategorySlug("football")` 로 직접 구한다(같은 기준을 다른 경로로)
-- 400 세 경우 — 없음(`@RequestParam` 필수) · `baseball` · 빈 값(`@Pattern`). 빈 값은 이름이 있어 필수 검사를 통과하고 `@Pattern` 에서 막힌다 → 허용 목록에 빈 갈래(`"football|"`)가 생기면 이 테스트만 잡는다
-- 캐시 — GET(N) → POST → GET(**N** = 적중) → 캐시 비우기 → GET(N+1). **10초 만료는 테스트하지 않는다** — `sleep` 은 느리고 시각에 흔들린다. 만료 자체는 Caffeine 의 일이고, 10초 설정은 6-3 에서 손으로 쟀다
-- 빨간불 확인(2026-11-03): `@Cacheable` 을 막으면 캐시 테스트만 실패 — `count Expected: 9 got: 10`
-- `./gradlew clean build` — 12건 · `8 executed` · jar `BOOT-INF/lib/` 에 `caffeine-3.2.4` · `spring-context-support-7.0.8` · `spring-boot-cache-4.1.0`. `.env` 는 jar 에 없다
-
-**알게 된 것**
-- ⚠️ **허용 목록 `"football"` 이 두 곳에 있다** — DTO `ParticipantLogRequest`(POST) 와 Controller `count` 의 `@Pattern`. 카테고리를 추가할 때 같이 고친다
-- 쿼리 값 검사는 **매개변수에 `@Pattern` 을 직접** 붙인다(Spring 6.1+ 내장 메서드 검사 → `HandlerMethodValidationException` → 400). **클래스 수준 `@Validated` 는 붙이지 않는다** — 다른 검사 경로(AOP)가 켜진다
-- `@RequestParam` 이 찾는 이름은 Java 매개변수 이름 — `-parameters` 로 컴파일돼 `.class` 에 `MethodParameters` 가 있다(javap 확인). **매개변수 이름이 곧 API 계약**
-- **400 이라고 다 로그에 남지는 않는다** — `categorySlug` 없음은 WARN(`MissingServletRequestParameterException`)이 찍히지만, `baseball`·빈 값은 아무것도 안 찍힌다. `HandlerMethodValidationException` 이 `ResponseStatusException` 을 상속해서, 로그를 남기지 않는 `ResponseStatusExceptionResolver` 가 먼저 처리한다(7.0.8 javap). **서버 로그 없는 400 = 허용 목록일 가능성**
-- 텍스트 블록 `{"count": %d}` 의 `%d` 에 따옴표를 두면 문자열 `"9"` 가 되어 엄격 비교가 실패한다
-- `.http` 의 POST 는 롤백되지 않고 로컬 DB 에 쌓인다 — 2026-11-03 `jun98` PC 기준 football 9행
-
-**F6-4 뒤 선택 과제 — Redis 캐시 실습 (2026-11-03 사용자 요청 · 학습용)**
-
-- **왜 MVP 는 Caffeine 인가** — 백엔드가 한 대(D1)라 Redis 의 장점(서버 여러 대가 같은 값 공유)이 쓸모없다. 여러 대여도 이 숫자는 서버마다 최대 10초 달라도 괜찮다. Redis 는 인프라가 하나 늘고, **Redis 가 죽으면 Spring 캐시 기본 오류 처리가 예외를 그대로 던져 API 가 500** 이 된다
-- **실습 내용** — `@Cacheable` 코드는 그대로 두고 **저장소만 바꾼다**(틀/저장소 분리 확인). `build.gradle` 에 `spring-boot-starter-data-redis`(Boot 4.1 BOM 에 있음) · `spring.cache.type: redis` · `spring.cache.redis.time-to-live: 10s`(4.0.0 jar 에서 키 확인) · 접속 주소는 DB 처럼 환경변수로 — 접속 설정 키는 그때 4.1.0 jar 로 확인
-- **실행** — Redis 는 Windows 공식 지원이 없다 → Docker(`jun98` PC 에 28.5.2 있음 · 2026-11-03): `docker run -d --name redis -p 6379:6379 redis`. 개인 학습은 무료(Redis 8 은 AGPLv3 선택 가능 · 오픈소스 갈래 Valkey 도 있음)
-- **측정** — 6-3 과 같은 `.http` 측정(10초 안엔 안 바뀌고 지나면 바뀌는지) + Redis 를 끄면 무슨 일이 나는지. 캐시 테스트(`count_is_cached_until_cache_is_cleared`)는 저장소와 상관없이 그대로 통과해야 한다
-- **경계** — 실습 브랜치에서 한다. `main` 에 넣을지는 그때 결정 — 기본은 Caffeine 유지. 테스트도 Redis 가 떠 있어야 돈다는 점에 주의
+**선택 과제 — Redis 캐시 실습** (2026-11-03 사용자 요청 · 학습용 · 실습 브랜치에서 · `main` 은 Caffeine 유지) — `@Cacheable` 은 그대로 두고 저장소만 바꾼다: `spring-boot-starter-data-redis` · `spring.cache.type: redis` · `spring.cache.redis.time-to-live: 10s` · 접속 주소는 DB 처럼 환경변수로(키는 그때 4.1.0 jar 로 확인) · `docker run -d --name redis -p 6379:6379 redis`. 같은 `.http` 측정에 더해 Redis 를 끄면 어떻게 되는지 본다 — Spring 캐시 기본 오류 처리는 예외를 그대로 던져 API 가 500 이 된다. 캐시 테스트는 고치지 않고 통과해야 한다(테스트도 Redis 가 떠 있어야 돈다). MVP 가 Caffeine 인 이유는 서버가 한 대라 Redis 의 이점(여러 대가 같은 값을 공유)이 없어서다
 
 ### ✅ F6-3 `POST /api/participants` — 2026-10-29 (PR #3·#4·#5 · `8e640af`)
 
-**주소에 버전을 넣지 않는다** (2026-10-28 · 프론트 ARCHITECTURE §6) — 베이스 `/api`. 깨지는 변경은 백엔드를 먼저 배포해 옛 모양·새 모양을 둘 다 지원 → 프론트 배포 → 옛 모양 제거 순서로 한다.
+- ⚠️ **`answerCode` 에는 `@Pattern` 을 걸지 않는다** — 걸면 요청 전체가 400 이 되어 "형식이 틀려도 참여 기록은 남긴다"(ARCHITECTURE §5.2)를 어긴다. Service 가 범용 형식(숫자 1~32자)만 보고 틀리면 `null` 로 저장한다. 축구 9자리 규칙은 Java 에 복사하지 않는다(원본 `lib/answer-code.ts`)
 
-**계약의 원본은 프론트 ARCHITECTURE §6** (2026-10-27 확정). 백엔드가 알아야 할 것만:
-
-- `categorySlug` 는 **서버 허용 목록**(MVP: `football`)으로 검사 · `resultSlug` 는 **형식만** 검사(15팀 목록 대조 ✗) — 어기면 400
-- ⚠️ **`answerCode` 에는 `@Pattern` 을 걸지 않는다** — 걸면 요청 전체가 400 이 되어 "형식이 틀려도 참여 기록은 남긴다"(§5.2)를 어긴다. Service 에서 범용 형식(숫자 1~32자)만 보고 틀리면 `null` 로 저장. 축구 9자리 규칙은 Java 에 복사하지 않는다(원본 `lib/answer-code.ts`)
-- 성공은 **`201` 본문 없음** · **`id` 를 응답에 넣지 않는다** — 프론트가 쓰지 않는다
-- 알고 받아들인 위험: 서버 쪽 중복·남용 방어 없음(중복 차단은 프론트 `sessionStorage` 뿐 · §4.4)
-
-**테스트 방식** (이후 슬라이스도 같다)
+**테스트 방식** (이후 슬라이스도 같다 · 예시는 `ParticipantLogControllerTest`)
 - `@SpringBootTest` + `@AutoConfigureMockMvc` + `MockMvcTester` + `@Transactional` — 실제 로컬 MySQL 에 붙고 테스트마다 롤백(테스트 전용 DB 는 MVP 에 과하다). 테스트 메서드 하나 = `http/participants.http` 요청 하나
-- **기존 행에 기대지 않는다** — 로컬 DB 마다 행이 다르다. 행 수는 전후 차이로, 방금 저장한 행은 `repository.findAll(Sort.by(Sort.Direction.DESC, "id")).getFirst()` 로 본다
-- 확인한 API (spring-test 7.0.8 · AssertJ 3.27.7): `assertThat(mvc.post().uri(…).contentType(MediaType.APPLICATION_JSON).content("""…"""))` 가 요청을 실행하고 `.hasStatus(HttpStatus.CREATED)` · `.hasStatusOk()` · `.headers().hasValue("Allow", "POST")` · `.bodyJson().isStrictlyEqualTo(…)` 로 검사한다. `assertThat` 은 `org.assertj.core.api.Assertions`
-- **빨간불 확인** — 통과한 테스트가 정말 잡아내는지, 지키는 코드를 잠깐 막고 실패를 본 뒤 되돌린다(F6-4 캐시 테스트에서 함 · F6-3 `@Valid` 는 2026-10-29 사용자 결정으로 건너뜀)
+- **기존 행에 기대지 않는다** — 로컬 DB 마다 행이 다르다. 행 수는 전후 차이로, 방금 저장한 행은 id 가 가장 큰 행으로 본다
+- **빨간불 확인** — 통과한 테스트가 정말 잡는지, 지키는 코드를 잠깐 막아 실패를 본 뒤 되돌린다
 
 ### ✅ F6-2 `participant_logs` 엔티티 · Repository — 2026-10-27 (PR #2 · `5559dd6`)
 
-**설계 원본** — 프론트 `docs/ARCHITECTURE.md` §5.2. 코드는 `participant/` 폴더가 원본이다.
+- **`protected` 빈 생성자** — Hibernate 가 행을 객체로 복원할 때 쓴다. 프록시가 자식 클래스라 `private` 은 안 된다
+- **Lombok 은 이 엔티티에 쓰지 않는다** — 무엇을 줄여 주는지 한 번은 직접 써 봐야 안다(학습 결정 · `build.gradle` 에 들어 있어도). 도입은 F7 `team_results`
 
-- **기능별 패키지** — `participant/` 에 엔티티 · Repository · Service · Controller (`domain/` · `repository/` 같은 계층별 폴더 안 씀). Spring Boot 문서 "Structuring Your Code" 예시가 기능별이고, 두 테이블이 외래키 없이 독립이다. 패키지는 DB 와 무관해서 나중에 바꿔도 된다
-- **5칸** — `answer_code VARCHAR(32)` NULL 허용. 분석용 · 기록하지 않은 답은 되살릴 수 없다 · 백엔드는 해석하지 않고 보관만 한다
-- **`ddl-auto`** = `${NEWBEEZ_DDL_AUTO:validate}` — 기본은 `validate`, 로컬 `.env` 에서만 `update`. 값을 안 준 환경(배포)에서 테이블이 멋대로 바뀌지 않게
-- **`created_at`** = 자바 `Instant` → **UTC 로 저장** — **Hibernate 가 UTC 달력을 붙여 JDBC 에 넘기기 때문**이다(드라이버가 바꾸는 게 아니다 · 2026-11-02 노트북 정정). 2026-10-26 측정: Java `07:57:29.28Z` = DB `07:57:29` = 로컬 KST 16:57:29 − 9시간. `datetime(0)` 이라 소수점 아래는 반올림 · Workbench 에서는 9시간 이르게 보인다
-- **생성자** — `public` 3개짜리(새 기록용 — `id` 는 안 받고 `createdAt` 은 안에서 `Instant.now()`) + `protected` 빈 생성자(Hibernate 가 행을 객체로 복원할 때 · 프록시가 자식 클래스라 `private` 불가)
-- **setter 없음** — getter 5개만. 참여 기록은 쌓기만 한다(append-only)
-- **Lombok 은 이 엔티티에 쓰지 않는다** — 무엇을 줄여 주는지 한 번은 직접 써 봐야 안다. F7 `team_results`(30칸)에서 도입
-- 이때 만든 `ParticipantLogRepositoryTest` 는 2026-10-29 삭제(`6489263`) — F6-3 Controller 테스트가 HTTP 부터 DB 까지 같은 것을 본다. ⚠️ 그 테스트가 실제로 확인한 것은 **INSERT 성공과 id 생성뿐**이었다(UTC·인덱스를 본 게 아님 · 노트북 정정). 내용은 `git show e8b1d13:src/test/java/com/newbeez/newbeezback/participant/ParticipantLogRepositoryTest.java`
-
-**만들어지는 테이블** — 칸이 알파벳순으로 나오는 것은 정상이다. F6.5 에서 Flyway `V1__participant_logs.sql` 로 옮긴다
+**만들어지는 테이블** — 지금 엔티티의 `ddl-auto=update` 결과 · 칸이 알파벳순인 것은 정상 · F6.5 에서 `V1__participant_logs.sql` 로 옮길 때 마지막 인덱스는 `idx_cat_created (category_slug, created_at)` 로 바꾼다(엔티티 `@Index` 도 같이 · 아래 F6.5 절)
 
 ```sql
 create table participant_logs (
@@ -229,9 +178,9 @@ create index idx_created on participant_logs (created_at);
    - `NEWBEEZ_CORS_ALLOWED_ORIGINS` 줄도 그대로 둔다(F6-5 2-3 부터 필수). **이미 `.env` 가 있는 PC 는 이 줄만 추가**한다 — `.env` 는 git 으로 오가지 않아서 `.env.example` 이 바뀌어도 저절로 생기지 않는다
 3. `./gradlew bootRun` → `Started NewbeezBackApplication` 이 찍히면 성공. 확인은 `http/participants.http` 의 ⑦(참여자 수)
 
-### 🧹 2026-09-04 — 레거시 폐기
+### 🧹 2026-09-04 레거시 폐기
 
-7월에 만든 `docs/`·`data/`·`Category.java`·`application.yml` 은 *백엔드가 채점하던 시절*의 설계(문항 10개 · 유클리드 · 백엔드 채점 · 테이블 4개)라 **전부 버리고** 스캐폴드 커밋(`03f9357`)으로 되돌렸다. 🔑 **교훈 — 설계를 두 레포에 복사해두면 한쪽만 낡는다** → [CLAUDE.md](CLAUDE.md) "여기에 설계를 복사하지 말 것". 15팀 좌표는 여전히 유효하고 원본은 프론트 `lib/clubs.ts` 다(백엔드는 좌표를 쓰지 않아 사본을 두지 않는다).
+백엔드가 채점하던 시절의 `docs/`·`data/`·코드를 전부 버리고 스캐폴드 커밋(`03f9357` · 2026-07-03)으로 되돌렸다(버린 파일은 git 기록에 없다) — 교훈은 [CLAUDE.md](CLAUDE.md) "여기에 설계를 복사해두지 말 것".
 
 ---
 
@@ -282,7 +231,7 @@ create index idx_created on participant_logs (created_at);
 
 - ⚠️ **테스트는 로컬 DB `newbeez` 에 실제로 붙는다**(`bootRun` 과 같은 DB). `@Transactional` 이라 행은 남지 않는다. Spring 은 테스트 트랜잭션의 시작·롤백을 기본 로그(INFO)에 찍지 않는다 — 롤백은 Workbench 에서 실행 전후 `COUNT(*)` 가 같은지로 확인한다
 - ⚠️ **`@Transactional` 테스트 안에서 다시 읽은 값은 DB 값이 아니다** — 같은 트랜잭션이 들고 있는 객체가 그대로 돌아온다. DB 에 실제로 들어간 값(반올림된 시각 등)을 보려면 `flush` · `clear` 뒤에 읽는다(노트북 2026-10-27)
-- ⚠️ **캐시는 롤백되지 않는다** — 앱 메모리라 테스트 트랜잭션 밖이다. 캐시를 쓰는 기능의 테스트는 시작 전에 캐시를 비운다(F6-4 `@BeforeEach`)
+- ⚠️ **캐시는 롤백되지 않는다** — 앱 메모리라 테스트 트랜잭션 밖이다. 캐시를 쓰는 기능의 테스트는 시작 전에 캐시를 비운다(예: `ParticipantLogControllerTest` 의 `@BeforeEach`)
 - 테스트 데이터는 **프론트가 실제로 만들 수 있는 값**으로 — 답코드는 `032102223` 같은 9자리(노트북 2026-10-27)
 - ⚠️ **`@SpringBootTest` 없이 `@Autowired` 를 쓰면** IntelliJ 가 빨간 밑줄(`Autowired members must be defined in valid Spring bean`)을 띄우고, 실행하면 필드가 `null` 로 남아 **`NullPointerException`** 으로 실패한다(노트북 정정)
 - ⚠️ **통과한 테스트는 콘솔에 아무것도 안 찍는다** — `BUILD SUCCESSFUL` 대신 `build/test-results/test/TEST-*.xml` 의 tests·failures·시각으로 확인한다. 로그·`println` 도 거기 있다. 한 클래스만 실행은 `./gradlew test --tests "com.newbeez.newbeezback.participant.ParticipantLogControllerTest"`
