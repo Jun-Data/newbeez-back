@@ -68,7 +68,6 @@ Content-Type: application/json
 # ── CORS (F6-5) — 브라우저 흉내: 브라우저가 자동으로 붙이는 Origin 헤더를 손으로 붙인다 ──
 # 본문이 아니라 응답 "헤더"를 본다 — 허락 헤더 = Access-Control-Allow-Origin
 # Origin 이 없는 요청(⑦ 등)은 CORS 요청이 아니라서 설정과 상관없이 그대로 통과한다
-# 기대값은 CORS 설정 "후" 기준. 설정 "전"(F6-5 2-0)에는 ⑬~⑮ 모두 허락 헤더가 없다
 
 ### ⑬ 허용 출처에서 GET count → 200 · Access-Control-Allow-Origin: http://localhost:3000
 GET http://localhost:8080/api/participants/count?categorySlug=football
