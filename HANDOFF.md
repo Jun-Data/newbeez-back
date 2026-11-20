@@ -7,7 +7,7 @@
 > - 작업 규칙(역할·커밋·브랜치·스택 주의점) → [CLAUDE.md](CLAUDE.md)
 > - 프론트 진행 상황 → 프론트 레포 `HANDOFF.md`
 
-**마지막 업데이트: 2026-11-19 (데스크톱)** — **F6-5 CORS 테스트 3-1 끝**(⑬ · ⑭ 2건 통과 · `37e0d71`) → **다음은 3-2**(⑮ 사전 요청 · ⑯ POST). 설계 검토 결정(2026-11-09)은 아래 F6.5 절 · 프론트 브랜치 `docs/review-decisions-2026-11-09`(PR 전) · D1 체크리스트는 맨 아래 "그 외". ⚠️ **노트북은 `.env` 에 `NEWBEEZ_CORS_ALLOWED_ORIGINS=http://localhost:3000` 줄부터 추가**(아래 F6-1 표 ⬜) — 없으면 앱·테스트가 뜨지 않는다. F7 팀 소개 위치는 재검토 중(F6.5 절 ⏸)
+**마지막 업데이트: 2026-11-20 (데스크톱)** — **F6-5 CORS 테스트 3-2 끝**(⑬~⑯ 4건 통과 · `75c12e1`) · **3-3(⑰~⑲)은 건너뛴다**(아래 "3단계 메모") → **다음은 3-4**(빨간불 · 전체 테스트 16건) → 4(PR). 설계 검토 결정(2026-11-09)은 아래 F6.5 절 · 프론트 브랜치 `docs/review-decisions-2026-11-09`(원격에 올림 · PR 전) · D1 체크리스트는 맨 아래 "그 외". ⚠️ **노트북은 `.env` 에 `NEWBEEZ_CORS_ALLOWED_ORIGINS=http://localhost:3000` 줄부터 추가**(아래 F6-1 표 ⬜) — 없으면 앱·테스트가 뜨지 않는다. F7 팀 소개 위치는 재검토 중(F6.5 절 ⏸)
 🔀 **브랜치** — F6-5 는 `feat/cors` 에서 한다. 슬라이스 끝에 PR 하나 · `main` 에 직접 커밋·push 하지 않는다 — PR 로만 ([CLAUDE.md](CLAUDE.md))
 
 ### ▶ 다른 PC에서 이어갈 때
@@ -89,23 +89,27 @@
 | 2-1 | `CorsConfig` + **GET count 규칙 하나** · 출처는 코드에 직접 — 헤더가 생기고, 다른 출처는 403 | 사용자 | ✅ `dbb69ef` — ⑬ 200 + `Access-Control-Allow-Origin: http://localhost:3000` · ⑭ **403** `Invalid CORS request` · ⑦ 200 그대로 · ⑮ 변화 없음(규칙 없는 경로) · ⑬⑭⑦ 에 `Vary` 3개가 새로 붙음 |
 | 2-2 | **POST 규칙** 추가 — `OPTIONS` 사전 요청에 허락 헤더 | 사용자 | ✅ `e5af8d0` — ⑮ 200 + Allow-Origin · Allow-Methods `POST` · Allow-Headers `content-type` · Max-Age `1800`(`Allow:` 줄은 그대로) · ⑰ DELETE **403** · ⑱ content-type + x-debug **200**(x-debug 빠짐 — 위 "헤더는 다르다") · ⑲ x-debug 만 **403** · ⑯ 201 + Allow-Origin(사전 요청용 헤더 없음) · count 9 → 11(⑯ 두 번 전송) |
 | 2-3 | 출처를 **환경변수로** — `yml` · `@Value` · `.env`. `.env` 한 줄 전에 테스트가 기동 실패하는지(기본값 없음 확인) → 넣은 뒤 2-1·2-2 와 같은 결과 | 사용자 | ✅ `d87c480` — `.env` 줄 없이 test **12건 실패** · 원인 하나(`corsConfig` ← `Could not resolve placeholder 'NEWBEEZ_CORS_ALLOWED_ORIGINS' … <-- "${newbeez.cors.allowed-origins}"` · 나머지 10건은 failure threshold) → 줄 추가 후 **12건 통과**(컴파일 up-to-date · `.env` 만 다름) · ⑬ 200 · ⑭ 403 · ⑮ 허락 헤더 4개 = 2-1·2-2 와 같음 · 실험: 쉼표 뒤 공백 → 잘림(⑬⑭ 200) · 빈 값 → 기동 성공 · ⑬⑮ 403(위 "값을 둘 곳") · 끝나고 `.env` 원래 값(⑭ 다시 403) |
-| 3 | 테스트 — 새 파일 `CorsConfigTest` · **`.http` 한 블록 = 테스트 하나** · 상태 코드만이 아니라 **허락 헤더 값**까지 본다(⑱ 은 200 이어도 x-debug 가 빠진다) · **하나 치고 이 클래스만 실행**(`./gradlew test --tests CorsConfigTest` 또는 클래스 옆 ▶) · 실행 전에 결과를 예측해 적는다 · 새 개념마다 실패를 한 번 본다(아래 "3단계 메모") | 사용자(코드·실행) · Claude(결과 XML 확인) | 🟡 **진행 중** |
+| 3 | 테스트 — 새 파일 `CorsConfigTest` · **`.http` ⑬~⑯ 한 블록 = 테스트 하나**(⑰~⑲ 는 손 확인만 · 3-3) · 상태 코드만이 아니라 **허락 헤더 값**까지 본다(⑱ 은 200 이어도 x-debug 가 빠진다) · **하나 치고 이 클래스만 실행**(`./gradlew test --tests CorsConfigTest` 또는 클래스 옆 ▶) · 실행 전에 결과를 예측해 적는다 · 새 개념마다 실패를 한 번 본다(아래 "3단계 메모") | 사용자(코드·실행) · Claude(결과 XML 확인) | 🟡 **진행 중** |
 | 3-1a | 뼈대 + ⑬ — `@SpringBootTest(properties = "newbeez.cors.allowed-origins=" + CorsConfigTest.ALLOWED)` 로 허용 출처를 **테스트가 고정**(PC 마다 다른 `.env` 에 기대지 않는다) · `@AutoConfigureMockMvc` · `static final String ALLOWED` · `@Autowired MockMvcTester mvc` · ⑬ GET count → 200 + Allow-Origin | 사용자 | ✅ 2026-11-19 · 1건 통과 |
 | 3-1b | 덮어쓰기 증명 — 3-1a 는 테스트 값과 `.env` 가 둘 다 3000 이라 통과해도 어느 쪽 덕인지 모른다 → `ALLOWED` 를 4000 으로 바꿔 실행(통과 = 테스트 값이 쓰인다) → 그 상태에서 `properties` 의 `=` 를 지워 실행(실패 = `.env` 의 3000 이 쓰인다 · 데스크톱 첫 입력이 실제로 `=` 가 빠져 있었다) → 둘 다 되돌린다 | 사용자 | ✅ 4000 통과 · `=` 삭제 → `expected: 200 but was: 403`(`Invalid CORS request`) · 되돌림 |
 | 3-1c | ⑭ — ⑬ 을 복사해 세 곳만: `OTHER`(3001) · `hasStatus(HttpStatus.FORBIDDEN)` · `doesNotContainHeader(ACCESS_CONTROL_ALLOW_ORIGIN)` | 사용자 | ✅ `37e0d71` — 클래스 전체 2건 통과 · `Started CorsConfigTest` 1번 |
-| 3-2 | ⑮ 사전 요청(`mvc.options()` + `Access-Control-Request-Method/Headers` → 허락 헤더 4개) · ⑯ POST(201 + Allow-Origin) + 클래스에 `@Transactional`(행 롤백) | 사용자 | ⬜ **← 다음** |
-| 3-3 | ⑰ DELETE 403 · ⑱ 200 + Allow-Headers `content-type` · ⑲ 403 | 사용자 | ⬜ |
-| 3-4 | 빨간불 — `CorsConfig` 의 `.allowedHeaders("Content-Type")` 을 지우면 어느 테스트가 깨질지 **예측** → 실행 → 복구 → 전체 `./gradlew test`(기존 12 + 7 = 19건) | 사용자 | ⬜ |
+| 3-2 | ⑮ 사전 요청(`mvc.options()` + `Access-Control-Request-Method/Headers` → 허락 헤더 3개 — Allow-Origin · Allow-Methods · Allow-Headers) · ⑯ POST(201 + Allow-Origin) + 클래스에 `@Transactional`(행 롤백) | 사용자 | ✅ `75c12e1` — 클래스 전체 4건 통과(2026-11-20) · `Max-Age` 는 검사하지 않는다(아래 메모) |
+| 3-3 | ⑰ DELETE 403 · ⑱ 200 + Allow-Headers `content-type` · ⑲ 403 | 사용자 | ⏭ **건너뜀**(2026-11-20 · 이유는 아래 메모) — `.http` ⑰~⑲ 손 확인은 남아 있다 |
+| 3-4 | 빨간불 — `CorsConfig` **POST 규칙**의 `.allowedOrigins(allowedOrigins)` 를 지우면 어느 테스트가 깨질지 **예측** → 실행 → 복구 → 전체 `./gradlew test`(기존 12 + 4 = 16건) | 사용자 | ⬜ **← 다음** — 예상: ⑮ ⑯ 실패(Allow-Origin 이 Spring 기본값 `*` 가 된다) · ⑬ ⑭ 통과 |
 | 4 | HANDOFF 정리 · PR | Claude | ⬜ |
 
-**3단계 메모** (2026-11-19 데스크톱)
-- 3-1 은 데스크톱에서 커밋했다(`37e0d71`) — 노트북에 쳐 둔 3-1a 가 있으면 버린다
+**3단계 메모** (2026-11-20 데스크톱)
+- 3-1 · 3-2 는 데스크톱에서 커밋했다(`37e0d71` · `75c12e1`) — 노트북에 쳐 둔 3-1a 가 있으면 버린다
 - `assertThat` 은 Alt+Enter 후보 중 **`org.assertj.core.api.Assertions`** 를 고른다 — Hamcrest `MatcherAssert.assertThat` 도 뜨지만 컴파일 오류. `mvc.get()…` 이 돌려주는 요청 빌더가 AssertJ `AssertProvider<MvcTestResultAssert>` 를 구현해서 이어지는 것이다(spring-test 7.0.8 javap). 요청은 `assertThat` 이 검사를 시작할 때 실행된다 · `HttpHeaders` 도 후보가 둘이다 — `org.springframework.http` 를 고른다(`java.net.http` 는 `ORIGIN` 상수가 없어 컴파일 오류 · 2026-11-19 실제로 골랐다)
 - 클래스에 `public` 을 붙이지 않는다(기존 테스트와 같게 · JUnit 5 는 `private` 만 아니면 된다)
 - 이 클래스는 `properties` 가 달라 기존 테스트와 **앱(컨텍스트)을 따로 하나 더** 띄운다. 덮어쓴 키는 `application.yml` 의 `${NEWBEEZ_CORS_ALLOWED_ORIGINS}` 를 아예 읽지 않는다(지연 해석 · 2-3)
 - `ALLOWED` 에 `private` 을 붙이지 않는다 — 클래스 위 애너테이션은 몸통 밖이라 `has private access` 컴파일 오류(클래스 이름 없이 `ALLOWED` 만 쓰면 `cannot find symbol` · `final` 이 없으면 상수식이 아니다 · javac 21 로 확인)
 - **여백 ▶ 는 위치마다 범위가 다르다** — 메서드 옆은 그 메서드만 돈다. 커밋 전에는 클래스 옆 ▶ · 무엇이 돌았는지는 로그 마지막 줄 `--tests "…"` 와 결과 XML 의 `tests=` 로 본다(2026-11-19 ⑭ 만 돌리고 2건 통과로 볼 뻔했다)
-- **설명 상태** (2026-11-19) — 3-1 의 문법·개념은 설명했고 사용자가 직접 쳐서 통과시켰다. 통한 방식: 파일을 **3층**(준비 = 애너테이션 2개 · 재료 = `ALLOWED`·`mvc` · 시나리오 = `@Test` 메서드)으로 나눠 조각마다 치고 확인 · `.http` 손 동작에 대응(`bootRun` = `@SpringBootTest` · `.env` 값 = `properties` · 8080 포트 대신 = `@AutoConfigureMockMvc` · ▶ 한 번 = `@Test` 메서드 하나 · 눈으로 확인 = `assertThat`). 사용자가 막혔던 곳: "테스트 코드에 `CorsConfig` 가 없는데 JUnit 이 어떻게 아나" → JUnit 은 모른다 · `@SpringBootTest` 가 **앱 전체**를 켜고 테스트는 그 앱에 요청을 보내는 손님이다(`…Test` 이름은 관례). **`@Test`(메서드 · JUnit 이 읽음) vs `@SpringBootTest`(클래스 · "테스트 전에 앱을 켜라")**. 3-2 부터는 ⑬ 을 복사해 바꿀 곳만 짚는다
+- **계획을 줄였다**(2026-11-20 · 사용자 "테스트가 왜 이렇게 많나 · 실제 개발은 언제") — 자동 테스트는 ⑬~⑯ **4건**. 기준: **우리가 `CorsConfig` 에 쓴 설정만 고정하고 Spring 이 해 주는 일은 테스트하지 않는다**. 실제 `CorsConfiguration`(spring-web 7.0.8)으로 설정을 하나씩 바꿔 본 결과 — 출처 `*` · `allowedMethods` 삭제나 틀린 값 · 헤더 오타는 4건이 잡는다. 못 잡는 것은 **더 열리는 쪽** 둘(`allowedMethods("*")` 는 ⑰ 만 · `allowedHeaders` 줄 삭제는 ⑱⑲ 만 잡는다)인데 지금은 해가 없다(DELETE 핸들러 없음 → 405 · 모르는 헤더는 무시 · 쿠키·인증 없음). **로그인·인증·쓰기 메서드가 늘면 ⑰~⑲ 를 넣는다**. 배포 때 환경변수 값이 틀리는 것은 테스트로 못 잡는다 → D1 체크리스트(배포 뒤 ⑬)
+- `Max-Age` 는 테스트하지 않는다 — `CorsConfig` 에 `maxAge` 가 없고 1800 은 Spring MVC 기본값이다(plain `CorsConfiguration` 은 null · `applyPermitDefaultValues` 뒤 1800). 값을 직접 정하게 되면 그때 `.maxAge(…)` 와 검사를 같이 넣는다
+- 주소 끝 `/` — `/api/participants/` 는 **다른 주소**다(404). 실패 로그의 `Handler Type = ResourceHttpRequestHandler` · `No static resource …` 가 주소 오타 신호(맞으면 컨트롤러가 찍힌다 · 2026-11-20 ⑯ 첫 실행). 로그가 가리키는 줄(검사)과 원인 줄(요청)은 다르다
+- 테스트가 켠 앱도 **로컬 MySQL(`newbeez`)에 붙는다** — 덮어쓴 것은 허용 출처 한 줄뿐. ⑯ 이 행을 실제로 쓰므로 클래스에 `@Transactional`(테스트마다 롤백 · 롤백 자체는 따로 재지 않았다)
+- **설명 상태** (2026-11-19) — 3-1 의 문법·개념은 설명했고 사용자가 직접 쳐서 통과시켰다. 통한 방식: 파일을 **3층**(준비 = 애너테이션 2개 · 재료 = `ALLOWED`·`mvc` · 시나리오 = `@Test` 메서드)으로 나눠 조각마다 치고 확인 · `.http` 손 동작에 대응(`bootRun` = `@SpringBootTest` · `.env` 값 = `properties` · 8080 포트 대신 = `@AutoConfigureMockMvc` · ▶ 한 번 = `@Test` 메서드 하나 · 눈으로 확인 = `assertThat`). 사용자가 막혔던 곳: "테스트 코드에 `CorsConfig` 가 없는데 JUnit 이 어떻게 아나" → JUnit 은 모른다 · `@SpringBootTest` 가 **앱 전체**를 켜고 테스트는 그 앱에 요청을 보내는 손님이다(`…Test` 이름은 관례). **`@Test`(메서드 · JUnit 이 읽음) vs `@SpringBootTest`(클래스 · "테스트 전에 앱을 켜라")**. 3-2 부터는 ⑬ 을 복사해 바꿀 곳만 짚는다. **3-2 (2026-11-20)** — 통한 틀: 테스트 하나 = **"무엇을 보내고 → 무엇을 확인하나"** 두 덩어리(요청 조립은 `assertThat(` 를 닫는 `))` 까지). 사용자가 물은 것: ① `.header`(요청에 붙임) vs `.headers()`(응답 확인) ② `Request-Method`(단수) vs `Allow-Methods`(복수) → 요청 하나에 메서드는 하나 · 응답은 그 주소의 규칙 **목록**(우리 목록에 항목이 하나) ③ `Access-Control-Request-Headers` 는 헤더 **이름**만(값 `application/json` 은 진짜 POST 에) ④ 요청 `Origin` vs 응답 `Access-Control-Allow-Origin` 은 다른 헤더 ⑤ "테스트는 다른 환경 아닌가" → 포트와 허용 출처만 다르고 DB 는 같다 ⑥ `@Transactional` 을 왜 클래스에 → 기존 테스트와 같게 · 빠뜨림 방지
 
 ---
 
