@@ -7,8 +7,8 @@
 > - 작업 규칙(역할·커밋·브랜치·스택 주의점) → [CLAUDE.md](CLAUDE.md)
 > - 프론트 진행 상황 → 프론트 레포 `HANDOFF.md`
 
-**마지막 업데이트: 2026-11-03 (데스크톱)** — **F6-4 구현·테스트 완료, PR 대기** — `GET /api/participants/count?categorySlug=football` → `{"count": N}` + **10초 Caffeine 캐시**. `./gradlew clean build` 12건 통과 · jar 에 Caffeine 포함 확인. PR 이 머지되면 다음은 **F6-5 CORS**. F7 설계는 2026-10-20 확정 · Flyway 는 첫 배포 전 F6.5
-🔀 **브랜치** — F6-4 전체가 `feat/participant-count` 에 있다. PR 머지를 확인하면 이 브랜치를 로컬·원격 모두 지우고, F6-5 는 `main` 에서 새 브랜치로 시작한다. `main` 에 직접 커밋·push 하지 않는다 — PR 로만 ([CLAUDE.md](CLAUDE.md))
+**마지막 업데이트: 2026-11-20 (데스크톱)** — **F6-5 CORS 코드·테스트 끝**(3-4 빨간불 확인 · 전체 16건 통과) → **다음은 PR**(`feat/cors` → `main` · 사용자가 GitHub 웹에서 생성·머지) → 머지 뒤 F6.5 Flyway. 3-3(⑰~⑲)은 건너뛰었다(아래 "3단계 메모"). 설계 검토 결정(2026-11-09)은 아래 F6.5 절 · 프론트 브랜치 `docs/review-decisions-2026-11-09`(원격에 올림 · PR 전) · D1 체크리스트는 맨 아래 "그 외". ⚠️ **노트북은 `.env` 에 `NEWBEEZ_CORS_ALLOWED_ORIGINS=http://localhost:3000` 줄부터 추가**(아래 F6-1 표 ⬜) — 없으면 앱·테스트가 뜨지 않는다. F7 팀 소개 위치는 재검토 중(F6.5 절 ⏸)
+🔀 **브랜치** — F6-5 는 `feat/cors` 에서 한다. 슬라이스 끝에 PR 하나 · `main` 에 직접 커밋·push 하지 않는다 — PR 로만 ([CLAUDE.md](CLAUDE.md))
 
 ### ▶ 다른 PC에서 이어갈 때
 
@@ -16,7 +16,7 @@
 
 1. **백엔드** — `git fetch --prune` 후 작업 브랜치로(`git switch <브랜치>` · `git pull`). PR 이 이미 머지됐으면 `git switch main` · `git pull` 하고 머지된 로컬 브랜치는 `git branch -d` 로 지운다(옛 `feat/participant-log` · `feat/participant-api` 가 남아 있으면 같이) · ⚠️ **커밋 안 한 변경부터 치운다** — 원격에서 지운 파일(예: 2026-10-29 에 지운 `ParticipantLogRepositoryTest.java`)을 그 PC 에서 고치고 있었다면 `switch` 가 거부되지 않고 **그 파일을 새 브랜치로 조용히 들고 간다**(2026-11-02 노트북 재현). 먼저 커밋하거나 `git stash`
 2. **프론트** — `git switch main` 후 `git pull` (§6 계약: PR #3 `POST /participants` · #4 주소 버전 제거 · #5 참여자 수 · #6 캐시 10초)
-3. **그 PC 의 준비** — 아래 F6-1 표에서 ⬜ 인 것부터(계정 · `.env`, `NEWBEEZ_DDL_AUTO=update` 포함). `bootRun` 이 뜨면 그 PC 의 DB 에도 `participant_logs` 가 생긴 것이다 — Workbench `SHOW CREATE TABLE participant_logs;` 가 아래 F6-2 의 SQL 과 같은지 본다
+3. **그 PC 의 준비** — 아래 F6-1 표에서 ⬜ 인 것부터(계정 · `.env` — `NEWBEEZ_DDL_AUTO=update` · F6-5 2-3 부터 `NEWBEEZ_CORS_ALLOWED_ORIGINS` 포함). `bootRun` 이 뜨면 그 PC 의 DB 에도 `participant_logs` 가 생긴 것이다 — Workbench `SHOW CREATE TABLE participant_logs;` 가 아래 F6-2 의 SQL 과 같은지 본다
 4. **IntelliJ 를 쓰면 세 가지를 먼저 본다** — `.idea` 는 git 이 무시해서 PC마다 설정이 다르다
    - **Project SDK 가 21 인가** (File → Project Structure → Project → SDK). `jun98` PC 에는 실험판 `valhalla-ea-23` 이 잡혀 있었다 → 2026-10-16 `ms-21` (21.0.11) 로 바꿈
    - **실행은 상단 드롭다운의 `NewbeezBackApplication`(Spring Boot) ▶** — Gradle 실행 설정은 task 칸이 비어 있으면 `> Task :help` 만 돌고 앱이 안 켜진다
@@ -35,9 +35,9 @@
 | **F6-1** | **DB 설정** — `application.yml` + 환경변수 접속 → `bootRun` 성공 | ✅ `44e2283` (2026-10-06) |
 | **F6-2** | `participant_logs` 엔티티 + Repository | ✅ PR #2 `5559dd6` (2026-10-27) |
 | **F6-3** | `POST /api/participants` — 4계층 첫 관통 | ✅ PR #3·#4·#5 `8e640af` (2026-10-29) |
-| **F6-4** | `GET /api/participants/count?categorySlug=` + **10초 캐시** | ✅ 2026-11-03 — **PR 대기** (`feat/participant-count`) |
+| **F6-4** | `GET /api/participants/count?categorySlug=` + **10초 캐시** | ✅ PR #7 `009796a` (2026-11-03) |
 | 선택 | **Redis 캐시 실습** — 학습용 · 배포에 넣지 않는다. 아래 F6-4 절 "선택 과제" | ⬜ 아무 때나 (2026-11-03 추가) |
-| F6-5 | **CORS** — 브라우저가 직접 부르는 두 엔드포인트만 | ⬜ **← 다음** |
+| **F6-5** | **CORS** — 브라우저가 직접 부르는 두 엔드포인트만 | 🟡 **코드·테스트 끝 · PR 대기** (`feat/cors` · 2026-11-20) |
 | **F6.5** | **Flyway 전환** — `V1__participant_logs.sql` · `ddl-auto` 는 `validate` 고정 | ⬜ **배포 전** (2026-10-27 F7 앞에서 배포 앞으로 이동) |
 | **D1** | **첫 배포** — Dockerfile · 운영 MySQL 8.4 · 환경변수 · 유휴 회수 없는 호스팅 | ⬜ 2026-10-27 추가 |
 | 연동 | 프론트가 완료 시 `POST` + `ParticipantCount` — 실제 참여자 수·답코드가 쌓이기 시작 | ⬜ (프론트 작업) |
@@ -50,94 +50,99 @@
 
 ---
 
-## ⬜ 다음 — F6-5 CORS
+## 🟡 F6-5 CORS — 진행 중 (브랜치 `feat/cors`)
 
-- 대상은 **브라우저가 직접 부르는 두 엔드포인트**뿐 — `POST /api/participants` · `GET /api/participants/count`
-- `application/json` POST 라서 브라우저가 **`OPTIONS` 사전 요청**을 먼저 보낸다 → `OPTIONS` 메서드와 `Content-Type` 헤더를 허용해야 한다(F6-3 계약 때 확인)
-- 계약 원본은 프론트 ARCHITECTURE §6 — 시작 전에 프론트 클론을 `git fetch` 로 맞추고 다시 읽는다
+**계약의 원본은 프론트 ARCHITECTURE §6** (2026-11-03 `78dee33` 에서 다시 읽음). 백엔드가 알아야 할 것만:
+
+- 대상은 **브라우저가 직접 부르는 두 엔드포인트**뿐 — `POST /api/participants` · `GET /api/participants/count`. `GET /results`(F7)는 Next 서버가 빌드 때 부르므로 CORS 불필요
+- `POST` 는 `application/json` 이라 브라우저가 **`OPTIONS` 사전 요청**을 먼저 보낸다 → `Content-Type` 헤더를 허용해야 한다. `GET count` 는 사용자 정의 헤더가 없는 단순 GET 이라 사전 요청이 없다(그래도 허락 헤더는 필요)
+- **CORS 는 브라우저가 검사하고 서버가 허락한다** — `.http`·MockMvc·curl 은 검사하지 않아서, 지금까지의 확인은 CORS 와 무관하게 통과했다. 측정은 `Origin` 헤더를 붙여 보내고 **응답 헤더**(`Access-Control-Allow-Origin`)를 본다
+- CORS 가 없으면 — `GET count` 는 서버가 정상 처리(200)하지만 브라우저가 답을 JS 에 숨긴다 → 참여자 수 줄이 빈다. **`POST` 는 사전 요청에서 멈춰 서버에 도착하지 않는다 → 참여 기록·답코드가 조용히 안 쌓인다**
+
+**jar 확인** (2026-11-03 · Framework 7.0.8 · Boot 4.1.0)
+- Boot 에는 MVC CORS 설정 키가 **없다**(`spring-boot-webmvc` 메타데이터에 `cors` 0개) → Java 설정 `WebMvcConfigurer.addCorsMappings(CorsRegistry)`
+- `registry.addMapping(경로)` 의 기본값(`applyPermitDefaultValues`): 출처 `*` · 메서드 `GET`·`HEAD`·`POST` · 헤더 `*` · `maxAge` 1800초 — **출처를 지정하지 않으면 모두 허용**이 된다
+- `CorsRegistration` 메서드: `allowedOrigins` · `allowedOriginPatterns` · `allowedMethods` · `allowedHeaders` · `exposedHeaders` · `allowCredentials` · `allowPrivateNetwork` · `maxAge`
+- **설정이 있는 경로에서 목록 밖 출처는 Spring 이 403 으로 돌려보낸다** — 본문 `Invalid CORS request` · 컨트롤러까지 가지 않는다(`DefaultCorsProcessor.handleInternal` → `rejectRequest`). 목록 밖 **메서드**도 같다. "서버는 헤더만 붙이고 거절은 안 한다"는 설정이 **없는** 경로에서만 맞다
+- ⚠️ **헤더는 다르다** — 사전 요청이 묻는 헤더 중 **허락된 것만 골라** `Access-Control-Allow-Headers` 로 돌려주고, **하나도 허락되지 않을 때만** 403 이다(`CorsConfiguration.checkHeaders` 가 끝에서 `result.isEmpty() ? null`). 섞여 있으면 200 이고, 빠진 헤더를 보고 진짜 요청을 막는 건 **브라우저**다 → **서버 200 ≠ 브라우저 허락**. 2026-11-04 ⑱ · ⑲ 실측(처음엔 403 으로 잘못 예상 — `66a7e00` 본문, `77c24f9` 에서 정정)
+- 헤더 이름 비교는 대소문자 무시(`equalsIgnoreCase`) — 코드의 `Content-Type` 이 브라우저의 `content-type` 과 맞는다. 응답에는 **요청이 보낸 철자 그대로** 돌려준다
+- `Allow-Methods` · `Allow-Headers` · `Max-Age` 는 **사전 요청(⑮) 응답에만** 붙는다. 진짜 요청(⑯) 응답에는 `Allow-Origin` 만 — 이 줄이 없으면 201 이어도 브라우저는 실패로 본다(행은 저장되는데 프론트는 에러)
+- **`Origin` 헤더가 없는 요청은 CORS 요청이 아니라서 그대로 통과**한다(`isCorsRequest` false) — `.http`·curl·Next 서버(F7)는 영향 없음. CORS 는 남용 방어가 아니다
+- 설정이 없는 경로는 건너뛴다(`Skip: no CORS configuration has been provided`). 사전 요청은 Spring 이 대신 답하지만(`PreFlightHttpRequestHandler`) 허락 헤더가 없다 — 2-2 전의 `POST` 상태(2-0 · 2-1 의 ⑮)
+- ⚠️ **`@EnableWebMvc` 를 붙이지 않는다** — `WebMvcConfigurer` 만 구현한다. 붙이면 Boot 의 MVC 자동 설정 전체가 꺼진다(`WebMvcAutoConfiguration` 의 `@ConditionalOnMissingBean(WebMvcConfigurationSupport)`)
+
+**결정** (2026-11-03 사용자 결정)
+- **허용 출처** — 지금은 `http://localhost:3000` 하나. 운영 프론트 주소는 D1 에서 환경변수에 **추가만** 한다(코드 변경 없음). `*` ✗ · `https://*.vercel.app` 패턴 ✗(남의 Vercel 사이트까지 열린다). **출처 비교 규칙**(2026-11-03 `CorsConfiguration.checkOrigin` 을 직접 불러 확인): 끝 `/` · 대소문자는 무시하고 허락 · **호스트 이름**(`localhost` ≠ `127.0.0.1`) · 포트 · 프로토콜이 다르면 거절 · 목록 값 앞뒤에 공백이 있으면 거절(`CorsConfiguration` 은 값을 그대로 비교한다 — 단 `.env` 로 넣으면 그 전에 변환기가 잘라 주므로 문제없다, 아래 "값을 둘 곳")
+- **값을 둘 곳** — 환경변수 `NEWBEEZ_CORS_ALLOWED_ORIGINS`(쉼표로 여러 개) → `application.yml` 의 `newbeez.cors.allowed-origins` · **기본값 없음** — 빠지면 앱이 기동에서 멈춘다. CORS 가 빠졌을 때 화면은 멀쩡하고 기록만 조용히 사라지기 때문(§5.2 "기록하지 않은 답은 되살릴 수 없다"). F6-4 의 `type: caffeine` 명시와 같은 판단
+  - **실측(2026-11-05)** — `.env` 글자는 Boot 변환기(`ApplicationConversionService`)가 `String[]` 로 바꾼다: 쉼표로 나누고 **조각마다 앞뒤 공백을 자른다**(`3001, 3000` → 두 출처 · ⑬⑭ 둘 다 200). 변환기 없는 Spring 기본 편집기는 나누지도 않는다(scratchpad `SimpleTypeConverter` 비교)
+  - ⚠️ **"기본값 없음"이 막는 건 줄이 없을 때뿐** — 줄은 있는데 **값이 비면**(`=`) 배열 `[]` 로 기동은 성공하고, Origin 이 붙은 요청만 전부 403(⑬ ⑮) · Origin 없는 요청(⑦ · 헬스 체크)은 200 이라 서버 쪽에선 멀쩡해 보인다. 공백만(`[""]`) 도 같다(변환 실측 · 앱은 미측정). **생성자 검사 코드는 넣지 않는다**(2026-11-05 사용자 결정 — 드문 실수 · 연동 단계에서 바로 드러난다). 대신 `.env.example` 에 적고, **배포 확인 때 ⑬(Origin 붙인 요청) 하나로 본다**
+- **경로** — 두 경로를 정확히, 각자 쓰는 것만: `/api/participants` 는 `POST` + `Content-Type` 헤더 · `/api/participants/count` 는 `GET`. `/api/participants/**` ✗ · `/api/**` ✗(F7 `/results` 는 CORS 불필요). 쿠키·로그인이 없어 `allowCredentials` 는 기본값(꺼짐)
+
+**진행 상황** (2026-11-20)
+
+| | 할 일 | 누가 | 검증 |
+| --- | --- | --- | --- |
+| 0 | 브랜치 `feat/cors` + 이 HANDOFF 갱신 | Claude | ✅ |
+| 1 | 정하기 — 허용 출처 · 값을 둘 곳(환경변수 · 기본값 여부) · 경로 범위 | 사용자 결정 | ✅ 위 "결정" |
+| 2 | 코드 — **개념 하나씩 · 매번 `.http` ⑬~⑲ 로 응답 헤더 측정** (2026-11-03 사용자 요청으로 순서 재구성) | 사용자(코드·전송) · Claude(`.http`) | ✅ 2026-11-05 |
+| 2-0 | 코드 없이 측정 — 지금은 허락 헤더가 없다(문제부터 보기) | 사용자(전송) | ✅ ⑬⑭ 둘 다 200 · 응답이 글자 하나까지 같음(서버가 출처를 안 봄) · ⑮ 200 · 허락 헤더 없음(`Allow: GET, HEAD, POST, …` 는 CORS 와 무관한 서블릿 기본 응답 — `FrameworkServlet.doOptions` 가 응답에 `Allow` 가 없으면 `HttpServletBean.doOptions` 를 부른다 · javap) |
+| 2-1 | `CorsConfig` + **GET count 규칙 하나** · 출처는 코드에 직접 — 헤더가 생기고, 다른 출처는 403 | 사용자 | ✅ `dbb69ef` — ⑬ 200 + `Access-Control-Allow-Origin: http://localhost:3000` · ⑭ **403** `Invalid CORS request` · ⑦ 200 그대로 · ⑮ 변화 없음(규칙 없는 경로) · ⑬⑭⑦ 에 `Vary` 3개가 새로 붙음 |
+| 2-2 | **POST 규칙** 추가 — `OPTIONS` 사전 요청에 허락 헤더 | 사용자 | ✅ `e5af8d0` — ⑮ 200 + Allow-Origin · Allow-Methods `POST` · Allow-Headers `content-type` · Max-Age `1800`(`Allow:` 줄은 그대로) · ⑰ DELETE **403** · ⑱ content-type + x-debug **200**(x-debug 빠짐 — 위 "헤더는 다르다") · ⑲ x-debug 만 **403** · ⑯ 201 + Allow-Origin(사전 요청용 헤더 없음) · count 9 → 11(⑯ 두 번 전송) |
+| 2-3 | 출처를 **환경변수로** — `yml` · `@Value` · `.env`. `.env` 한 줄 전에 테스트가 기동 실패하는지(기본값 없음 확인) → 넣은 뒤 2-1·2-2 와 같은 결과 | 사용자 | ✅ `d87c480` — `.env` 줄 없이 test **12건 실패** · 원인 하나(`corsConfig` ← `Could not resolve placeholder 'NEWBEEZ_CORS_ALLOWED_ORIGINS' … <-- "${newbeez.cors.allowed-origins}"` · 나머지 10건은 failure threshold) → 줄 추가 후 **12건 통과**(컴파일 up-to-date · `.env` 만 다름) · ⑬ 200 · ⑭ 403 · ⑮ 허락 헤더 4개 = 2-1·2-2 와 같음 · 실험: 쉼표 뒤 공백 → 잘림(⑬⑭ 200) · 빈 값 → 기동 성공 · ⑬⑮ 403(위 "값을 둘 곳") · 끝나고 `.env` 원래 값(⑭ 다시 403) |
+| 3 | 테스트 — 새 파일 `CorsConfigTest` · **`.http` ⑬~⑯ 한 블록 = 테스트 하나**(⑰~⑲ 는 손 확인만 · 3-3) · 상태 코드만이 아니라 **허락 헤더 값**까지 본다(⑱ 은 200 이어도 x-debug 가 빠진다) · **하나 치고 이 클래스만 실행**(`./gradlew test --tests CorsConfigTest` 또는 클래스 옆 ▶) · 실행 전에 결과를 예측해 적는다 · 새 개념마다 실패를 한 번 본다(아래 "3단계 메모") | 사용자(코드·실행) · Claude(결과 XML 확인) | ✅ 2026-11-20 — 자동 4건(⑬~⑯) · 전체 16건 통과 |
+| 3-1a | 뼈대 + ⑬ — `@SpringBootTest(properties = "newbeez.cors.allowed-origins=" + CorsConfigTest.ALLOWED)` 로 허용 출처를 **테스트가 고정**(PC 마다 다른 `.env` 에 기대지 않는다) · `@AutoConfigureMockMvc` · `static final String ALLOWED` · `@Autowired MockMvcTester mvc` · ⑬ GET count → 200 + Allow-Origin | 사용자 | ✅ 2026-11-19 · 1건 통과 |
+| 3-1b | 덮어쓰기 증명 — 3-1a 는 테스트 값과 `.env` 가 둘 다 3000 이라 통과해도 어느 쪽 덕인지 모른다 → `ALLOWED` 를 4000 으로 바꿔 실행(통과 = 테스트 값이 쓰인다) → 그 상태에서 `properties` 의 `=` 를 지워 실행(실패 = `.env` 의 3000 이 쓰인다 · 데스크톱 첫 입력이 실제로 `=` 가 빠져 있었다) → 둘 다 되돌린다 | 사용자 | ✅ 4000 통과 · `=` 삭제 → `expected: 200 but was: 403`(`Invalid CORS request`) · 되돌림 |
+| 3-1c | ⑭ — ⑬ 을 복사해 세 곳만: `OTHER`(3001) · `hasStatus(HttpStatus.FORBIDDEN)` · `doesNotContainHeader(ACCESS_CONTROL_ALLOW_ORIGIN)` | 사용자 | ✅ `37e0d71` — 클래스 전체 2건 통과 · `Started CorsConfigTest` 1번 |
+| 3-2 | ⑮ 사전 요청(`mvc.options()` + `Access-Control-Request-Method/Headers` → 허락 헤더 3개 — Allow-Origin · Allow-Methods · Allow-Headers) · ⑯ POST(201 + Allow-Origin) + 클래스에 `@Transactional`(행 롤백) | 사용자 | ✅ `75c12e1` — 클래스 전체 4건 통과(2026-11-20) · `Max-Age` 는 검사하지 않는다(아래 메모) |
+| 3-3 | ⑰ DELETE 403 · ⑱ 200 + Allow-Headers `content-type` · ⑲ 403 | 사용자 | ⏭ **건너뜀**(2026-11-20 · 이유는 아래 메모) — `.http` ⑰~⑲ 손 확인은 남아 있다 |
+| 3-4 | 빨간불 — `CorsConfig` **POST 규칙**의 `.allowedOrigins(allowedOrigins)` 를 지우면 어느 테스트가 깨질지 **예측** → 실행 → 복구 → 전체 `./gradlew test`(기존 12 + 4 = 16건) | 사용자 | ✅ 2026-11-20 — 4건 중 **⑮ ⑯ 2건 실패** · 둘 다 `Allow-Origin` 값 검사에서 `expected: "http://localhost:3000" but was: "*"`(상태 검사 200 · 201 은 통과 — 거절이 아니라 **전부 허용**이 된다) · ⑬ ⑭ 통과 → 복구(`git diff` 없음) → 전체 **16건 통과**(`CorsConfigTest` 4 · `contextLoads` 1 · `ParticipantLogControllerTest` 11) |
+| 4 | HANDOFF 정리 · PR | Claude(초안) · 사용자(GitHub 웹에서 생성·머지) | 🟡 **← 다음** — push 뒤 PR. 머지되면 이 절을 "끝난 슬라이스"로 줄인다 |
+
+**3단계 메모** (2026-11-20 데스크톱)
+- 3-1 · 3-2 는 데스크톱에서 커밋했다(`37e0d71` · `75c12e1`) — 노트북에 쳐 둔 3-1a 가 있으면 버린다
+- `assertThat` 은 Alt+Enter 후보 중 **`org.assertj.core.api.Assertions`** 를 고른다 — Hamcrest `MatcherAssert.assertThat` 도 뜨지만 컴파일 오류. `mvc.get()…` 이 돌려주는 요청 빌더가 AssertJ `AssertProvider<MvcTestResultAssert>` 를 구현해서 이어지는 것이다(spring-test 7.0.8 javap). 요청은 `assertThat` 이 검사를 시작할 때 실행된다 · `HttpHeaders` 도 후보가 둘이다 — `org.springframework.http` 를 고른다(`java.net.http` 는 `ORIGIN` 상수가 없어 컴파일 오류 · 2026-11-19 실제로 골랐다)
+- 클래스에 `public` 을 붙이지 않는다(기존 테스트와 같게 · JUnit 5 는 `private` 만 아니면 된다)
+- 이 클래스는 `properties` 가 달라 기존 테스트와 **앱(컨텍스트)을 따로 하나 더** 띄운다. 덮어쓴 키는 `application.yml` 의 `${NEWBEEZ_CORS_ALLOWED_ORIGINS}` 를 아예 읽지 않는다(지연 해석 · 2-3)
+- `ALLOWED` 에 `private` 을 붙이지 않는다 — 클래스 위 애너테이션은 몸통 밖이라 `has private access` 컴파일 오류(클래스 이름 없이 `ALLOWED` 만 쓰면 `cannot find symbol` · `final` 이 없으면 상수식이 아니다 · javac 21 로 확인)
+- **여백 ▶ 는 위치마다 범위가 다르다** — 메서드 옆은 그 메서드만 돈다. 커밋 전에는 클래스 옆 ▶ · 무엇이 돌았는지는 로그 마지막 줄 `--tests "…"` 와 결과 XML 의 `tests=` 로 본다(2026-11-19 ⑭ 만 돌리고 2건 통과로 볼 뻔했다)
+- **계획을 줄였다**(2026-11-20 · 사용자 "테스트가 왜 이렇게 많나 · 실제 개발은 언제") — 자동 테스트는 ⑬~⑯ **4건**. 기준: **우리가 `CorsConfig` 에 쓴 설정만 고정하고 Spring 이 해 주는 일은 테스트하지 않는다**. 실제 `CorsConfiguration`(spring-web 7.0.8)으로 설정을 하나씩 바꿔 본 결과 — 출처 `*` · `allowedMethods` 삭제나 틀린 값 · 헤더 오타는 4건이 잡는다. 못 잡는 것은 **더 열리는 쪽** 둘(`allowedMethods("*")` 는 ⑰ 만 · `allowedHeaders` 줄 삭제는 ⑱⑲ 만 잡는다)인데 지금은 해가 없다(DELETE 핸들러 없음 → 405 · 모르는 헤더는 무시 · 쿠키·인증 없음). **로그인·인증·쓰기 메서드가 늘면 ⑰~⑲ 를 넣는다**. 배포 때 환경변수 값이 틀리는 것은 테스트로 못 잡는다 → D1 체크리스트(배포 뒤 ⑬)
+- `Max-Age` 는 테스트하지 않는다 — `CorsConfig` 에 `maxAge` 가 없고 1800 은 Spring MVC 기본값이다(plain `CorsConfiguration` 은 null · `applyPermitDefaultValues` 뒤 1800). 값을 직접 정하게 되면 그때 `.maxAge(…)` 와 검사를 같이 넣는다
+- 주소 끝 `/` — `/api/participants/` 는 **다른 주소**다(404). 실패 로그의 `Handler Type = ResourceHttpRequestHandler` · `No static resource …` 가 주소 오타 신호(맞으면 컨트롤러가 찍힌다 · 2026-11-20 ⑯ 첫 실행). 로그가 가리키는 줄(검사)과 원인 줄(요청)은 다르다
+- 테스트가 켠 앱도 **로컬 MySQL(`newbeez`)에 붙는다** — 덮어쓴 것은 허용 출처 한 줄뿐. ⑯ 이 행을 실제로 쓰므로 클래스에 `@Transactional`(테스트마다 롤백 · 롤백 자체는 따로 재지 않았다)
+- **3-4 에서 배운 것**(2026-11-20) — ① `CorsConfig` 는 제한이 아니라 **여는** 코드다: `addMapping` 이 열고(기본값 출처 `*` · 메서드 `GET, HEAD, POST` · 헤더 전부) 세 줄이 좁힌다. 줄을 지우면 닫히지 않고 **더 열린다**. `.allowedOrigins(…)` 호출은 Spring 이 강제하지 않는다(강제되는 것은 `.env` 값 쪽 — 없으면 기동 실패) → 그래서 테스트가 **값**을 본다(`hasValue(…, ALLOWED)` · "헤더가 있나"만 봤다면 통과했다) ② **테스트는 브라우저가 아니다** — 사용자 예상은 "⑮ 가 막히면 ⑯ 은 안 나간다"였다. `@Test` 는 서로 모른 채 각자 요청을 보낸다(실행 순서도 파일 순서와 무관)
+- **설명 상태** (2026-11-19) — 3-1 의 문법·개념은 설명했고 사용자가 직접 쳐서 통과시켰다. 통한 방식: 파일을 **3층**(준비 = 애너테이션 2개 · 재료 = `ALLOWED`·`mvc` · 시나리오 = `@Test` 메서드)으로 나눠 조각마다 치고 확인 · `.http` 손 동작에 대응(`bootRun` = `@SpringBootTest` · `.env` 값 = `properties` · 8080 포트 대신 = `@AutoConfigureMockMvc` · ▶ 한 번 = `@Test` 메서드 하나 · 눈으로 확인 = `assertThat`). 사용자가 막혔던 곳: "테스트 코드에 `CorsConfig` 가 없는데 JUnit 이 어떻게 아나" → JUnit 은 모른다 · `@SpringBootTest` 가 **앱 전체**를 켜고 테스트는 그 앱에 요청을 보내는 손님이다(`…Test` 이름은 관례). **`@Test`(메서드 · JUnit 이 읽음) vs `@SpringBootTest`(클래스 · "테스트 전에 앱을 켜라")**. 3-2 부터는 ⑬ 을 복사해 바꿀 곳만 짚는다. **3-2 (2026-11-20)** — 통한 틀: 테스트 하나 = **"무엇을 보내고 → 무엇을 확인하나"** 두 덩어리(요청 조립은 `assertThat(` 를 닫는 `))` 까지). 사용자가 물은 것: ① `.header`(요청에 붙임) vs `.headers()`(응답 확인) ② `Request-Method`(단수) vs `Allow-Methods`(복수) → 요청 하나에 메서드는 하나 · 응답은 그 주소의 규칙 **목록**(우리 목록에 항목이 하나) ③ `Access-Control-Request-Headers` 는 헤더 **이름**만(값 `application/json` 은 진짜 POST 에) ④ 요청 `Origin` vs 응답 `Access-Control-Allow-Origin` 은 다른 헤더 ⑤ "테스트는 다른 환경 아닌가" → 포트와 허용 출처만 다르고 DB 는 같다 ⑥ `@Transactional` 을 왜 클래스에 → 기존 테스트와 같게 · 빠뜨림 방지
 
 ---
 
 ## ✅ 끝난 슬라이스 — 결론만
 
-### ✅ F6-4 참여자 수 `GET /api/participants/count` — 2026-11-03 (PR 대기)
+> 계약·스키마의 원본은 프론트 ARCHITECTURE(§5·§6), 구현의 원본은 코드다. 여기에는 **코드와 설계 문서만 봐서는 모르는 이유·규칙**과 **다른 절이 가리키는 것**(F6-1 PC별 표·절차 · F6-2 비교용 SQL)만 둔다. 측정과 과정은 각 PR 의 커밋 본문에, 줄이기 전 전문은 `git show 8adc89f:HANDOFF.md` 에 있다(2026-11-09 압축 · PR 은 지금처럼 merge 커밋으로 — squash 하면 이 해시가 사라진다).
 
-**계약의 원본은 프론트 ARCHITECTURE §6** (2026-10-29 확정 · 10초는 2026-11-02). 백엔드가 알아야 할 것만:
+### ✅ F6-4 참여자 수 `GET /api/participants/count` — 2026-11-03 (PR #7 · `009796a`)
 
-- **임계값 없음** (2026-10-29 사용자 결정) — 0 이어도 그대로 돌려준다
-- **카테고리별** — 쿼리 `categorySlug` 필수 · `POST` 와 같은 허용 목록(`football`) · 어기면 400. 전체 수(`repository.count()`)가 아니라 `category_slug` 로 거른 수를 센다
-- 응답 `200` · `{ "count": N }` — 칸 이름이 있는 객체
-- **10초 캐시** — 바이럴로 수십만 행이 쌓이면 매 요청 `COUNT(*)` 가 체감된다. 10초면 DB `COUNT` 는 방문자 수와 무관하게 분당 **최대 6번**(`sync = true` 기준)이고 숫자는 최대 10초 늦다. "1분"은 정석이 아니라 설계 때 고른 값이었다(2026-11-02 사용자 결정 · 프론트 §5·§6 은 프론트 PR #6 `78dee33` 로 고침)
+- **캐시 설정 세 가지는 조용한 실패를 드러내려고 둔 것이다 — 지우지 않는다.** `spring.cache.type: caffeine`(Caffeine 이 빠지면 오류 없이 TTL 없는 기본 캐시로 바뀌는 것을 **기동 실패**로) · `cache-names: participantCount`(`@Cacheable` 이름 오타가 **첫 요청에서** `Cannot find cache named` 로 드러난다 · 기동은 된다) · `@EnableCaching`(없으면 기동도 요청도 멀쩡한 채 `@Cacheable` 만 무시된다 — **캐시 테스트로만** 드러난다)
+- `expireAfterWrite` — `expireAfterAccess` 는 계속 읽히면 영영 갱신되지 않는다 · `sync = true` — 만료 순간 동시 요청의 `COUNT` 를 하나로 줄인다 · 10초 만료 자체는 테스트하지 않는다(`sleep` 은 느리고 흔들린다 · `.http` 로 손으로 쟀다)
+- ⚠️ **허용 목록 `"football"` 이 두 곳에 있다** — `ParticipantLogRequest`(POST) 와 Controller `count` 의 `@Pattern`. 카테고리를 더할 때 같이 고친다
+- 쿼리 값 검사는 **매개변수에 `@Pattern` 을 직접** 붙인다(Spring 내장 메서드 검사 → 400) · 클래스 수준 `@Validated` ✗(다른 검사 경로가 켜진다) · `@RequestParam` 은 Java 매개변수 이름으로 찾는다 — **매개변수 이름이 곧 API 계약**
+- **서버 로그 없는 400 = 허용 목록일 가능성** — `categorySlug` 누락은 WARN 이 찍히지만 `baseball`·빈 값은 아무것도 안 찍힌다(`HandlerMethodValidationException` 을 로그 없는 리졸버가 처리 · 7.0.8 javap)
 
-**만든 것** — 코드가 원본이다
-- Repository `countByCategorySlug` → Service `count`(`@Cacheable(cacheNames = "participantCount", sync = true)` + `@Transactional(readOnly = true)`) → Controller `@GetMapping("/count")`(`@RequestParam @Pattern(regexp = "football") String categorySlug`) → 응답 record `ParticipantCountResponse(long count)`
-- 캐시 설정: `build.gradle` 에 `spring-boot-starter-cache` + `caffeine`(BOM 이 3.2.4) · `application.yml` 의 `spring.cache.type: caffeine` · `cache-names: participantCount` · `caffeine.spec: expireAfterWrite=10s` · 메인 클래스에 `@EnableCaching`
-- 수동 확인 `http/participants.http` ⑦~⑫ · 테스트 5개 + `@BeforeEach`(아래)
-
-**캐시를 이렇게 둔 이유** (Boot 4.1.0 · Framework 7.0.8 jar 확인)
-- **starter 만으로는 만료가 안 된다** — 기본 캐시(`ConcurrentMapCacheManager`)에는 TTL 이 없다 → Caffeine
-- **조용한 실패를 시끄럽게 바꾼다** — ① Caffeine 이 빠지면 Boot 는 오류 없이 기본 캐시로 바꾼다(`@ConditionalOnClass(Caffeine, CaffeineCacheManager)`) → `type: caffeine` 을 적어 두면 대신 기동에서 멈춘다(`No cache manager could be auto-configured, check your configuration (caching type is 'CAFFEINE')`) ② `cache-names` 를 적으면 이름이 고정돼(`dynamic=false`) `@Cacheable` 이름 오타가 `Cannot find cache named` 로 드러난다 ③ `@EnableCaching` 이 없으면 캐시 자동 설정 전체가 꺼지고(`@ConditionalOnBean(CacheAspectSupport)`) `@Cacheable` 은 **오류 없이 무시된다** — 이건 캐시 테스트가 잡는다
-- **`sync = true`** — 만료 순간 동시에 들어온 요청이 전부 `COUNT` 를 돌리는 것(캐시 쇄도)을 하나로 줄인다(측정은 안 함)
-- **`expireAfterWrite`** — `expireAfterAccess` 는 읽을 때마다 시간이 다시 시작돼, 계속 읽히면 영영 갱신되지 않는다
-- 캐시 키는 매개변수 값(`SimpleKeyGenerator` — 매개변수 하나면 그 값) → 카테고리마다 따로 저장된다. 허용 목록 덕에 칸 수가 늘지 않는다
-
-**측정** — 5단계(캐시 전): ⑦ `6` → ① POST → ⑦ `7` · ⑧⑨⑩ 400. 6-3(캐시 후): 11:22:00 `8`(저장) → POST(DB 9) → 11:22:08 `8`(적중) → 11:22:11 `9`(만료) — `@EnableCaching`·`@Cacheable`·Caffeine·`expireAfterWrite`·10초를 한 번에 확인
-
-**테스트** — `ParticipantLogControllerTest`
-- `@BeforeEach` 캐시 비우기 — **캐시는 테스트 롤백에 묶이지 않는다**. 롤백된 행까지 센 숫자가 다음 테스트로 넘어가지 않게. `getCache` 가 `@Nullable` 이라 `Objects.requireNonNull`
-- 정상 → `200` · `{"count": DB 수}` 엄격 비교 — 정답은 `repository.countByCategorySlug("football")` 로 직접 구한다(같은 기준을 다른 경로로)
-- 400 세 경우 — 없음(`@RequestParam` 필수) · `baseball` · 빈 값(`@Pattern`). 빈 값은 이름이 있어 필수 검사를 통과하고 `@Pattern` 에서 막힌다 → 허용 목록에 빈 갈래(`"football|"`)가 생기면 이 테스트만 잡는다
-- 캐시 — GET(N) → POST → GET(**N** = 적중) → 캐시 비우기 → GET(N+1). **10초 만료는 테스트하지 않는다** — `sleep` 은 느리고 시각에 흔들린다. 만료 자체는 Caffeine 의 일이고, 10초 설정은 6-3 에서 손으로 쟀다
-- 빨간불 확인(2026-11-03): `@Cacheable` 을 막으면 캐시 테스트만 실패 — `count Expected: 9 got: 10`
-- `./gradlew clean build` — 12건 · `8 executed` · jar `BOOT-INF/lib/` 에 `caffeine-3.2.4` · `spring-context-support-7.0.8` · `spring-boot-cache-4.1.0`. `.env` 는 jar 에 없다
-
-**알게 된 것**
-- ⚠️ **허용 목록 `"football"` 이 두 곳에 있다** — DTO `ParticipantLogRequest`(POST) 와 Controller `count` 의 `@Pattern`. 카테고리를 추가할 때 같이 고친다
-- 쿼리 값 검사는 **매개변수에 `@Pattern` 을 직접** 붙인다(Spring 6.1+ 내장 메서드 검사 → `HandlerMethodValidationException` → 400). **클래스 수준 `@Validated` 는 붙이지 않는다** — 다른 검사 경로(AOP)가 켜진다
-- `@RequestParam` 이 찾는 이름은 Java 매개변수 이름 — `-parameters` 로 컴파일돼 `.class` 에 `MethodParameters` 가 있다(javap 확인). **매개변수 이름이 곧 API 계약**
-- **400 이라고 다 로그에 남지는 않는다** — `categorySlug` 없음은 WARN(`MissingServletRequestParameterException`)이 찍히지만, `baseball`·빈 값은 아무것도 안 찍힌다. `HandlerMethodValidationException` 이 `ResponseStatusException` 을 상속해서, 로그를 남기지 않는 `ResponseStatusExceptionResolver` 가 먼저 처리한다(7.0.8 javap). **서버 로그 없는 400 = 허용 목록일 가능성**
-- 텍스트 블록 `{"count": %d}` 의 `%d` 에 따옴표를 두면 문자열 `"9"` 가 되어 엄격 비교가 실패한다
-- `.http` 의 POST 는 롤백되지 않고 로컬 DB 에 쌓인다 — 2026-11-03 `jun98` PC 기준 football 9행
-
-**F6-4 뒤 선택 과제 — Redis 캐시 실습 (2026-11-03 사용자 요청 · 학습용)**
-
-- **왜 MVP 는 Caffeine 인가** — 백엔드가 한 대(D1)라 Redis 의 장점(서버 여러 대가 같은 값 공유)이 쓸모없다. 여러 대여도 이 숫자는 서버마다 최대 10초 달라도 괜찮다. Redis 는 인프라가 하나 늘고, **Redis 가 죽으면 Spring 캐시 기본 오류 처리가 예외를 그대로 던져 API 가 500** 이 된다
-- **실습 내용** — `@Cacheable` 코드는 그대로 두고 **저장소만 바꾼다**(틀/저장소 분리 확인). `build.gradle` 에 `spring-boot-starter-data-redis`(Boot 4.1 BOM 에 있음) · `spring.cache.type: redis` · `spring.cache.redis.time-to-live: 10s`(4.0.0 jar 에서 키 확인) · 접속 주소는 DB 처럼 환경변수로 — 접속 설정 키는 그때 4.1.0 jar 로 확인
-- **실행** — Redis 는 Windows 공식 지원이 없다 → Docker(`jun98` PC 에 28.5.2 있음 · 2026-11-03): `docker run -d --name redis -p 6379:6379 redis`. 개인 학습은 무료(Redis 8 은 AGPLv3 선택 가능 · 오픈소스 갈래 Valkey 도 있음)
-- **측정** — 6-3 과 같은 `.http` 측정(10초 안엔 안 바뀌고 지나면 바뀌는지) + Redis 를 끄면 무슨 일이 나는지. 캐시 테스트(`count_is_cached_until_cache_is_cleared`)는 저장소와 상관없이 그대로 통과해야 한다
-- **경계** — 실습 브랜치에서 한다. `main` 에 넣을지는 그때 결정 — 기본은 Caffeine 유지. 테스트도 Redis 가 떠 있어야 돈다는 점에 주의
+**선택 과제 — Redis 캐시 실습** (2026-11-03 사용자 요청 · 학습용 · 실습 브랜치에서 · `main` 은 Caffeine 유지) — `@Cacheable` 은 그대로 두고 저장소만 바꾼다: `spring-boot-starter-data-redis` · `spring.cache.type: redis` · `spring.cache.redis.time-to-live: 10s` · 접속 주소는 DB 처럼 환경변수로(키는 그때 4.1.0 jar 로 확인) · `docker run -d --name redis -p 6379:6379 redis`. 같은 `.http` 측정에 더해 Redis 를 끄면 어떻게 되는지 본다 — Spring 캐시 기본 오류 처리는 예외를 그대로 던져 API 가 500 이 된다. 캐시 테스트는 고치지 않고 통과해야 한다(테스트도 Redis 가 떠 있어야 돈다). MVP 가 Caffeine 인 이유는 서버가 한 대라 Redis 의 이점(여러 대가 같은 값을 공유)이 없어서다
 
 ### ✅ F6-3 `POST /api/participants` — 2026-10-29 (PR #3·#4·#5 · `8e640af`)
 
-**주소에 버전을 넣지 않는다** (2026-10-28 · 프론트 ARCHITECTURE §6) — 베이스 `/api`. 깨지는 변경은 백엔드를 먼저 배포해 옛 모양·새 모양을 둘 다 지원 → 프론트 배포 → 옛 모양 제거 순서로 한다.
+- ⚠️ **`answerCode` 에는 `@Pattern` 을 걸지 않는다** — 걸면 요청 전체가 400 이 되어 "형식이 틀려도 참여 기록은 남긴다"(ARCHITECTURE §5.2)를 어긴다. Service 가 범용 형식(숫자 1~32자)만 보고 틀리면 `null` 로 저장한다. 축구 9자리 규칙은 Java 에 복사하지 않는다(원본 `lib/answer-code.ts`)
 
-**계약의 원본은 프론트 ARCHITECTURE §6** (2026-10-27 확정). 백엔드가 알아야 할 것만:
-
-- `categorySlug` 는 **서버 허용 목록**(MVP: `football`)으로 검사 · `resultSlug` 는 **형식만** 검사(15팀 목록 대조 ✗) — 어기면 400
-- ⚠️ **`answerCode` 에는 `@Pattern` 을 걸지 않는다** — 걸면 요청 전체가 400 이 되어 "형식이 틀려도 참여 기록은 남긴다"(§5.2)를 어긴다. Service 에서 범용 형식(숫자 1~32자)만 보고 틀리면 `null` 로 저장. 축구 9자리 규칙은 Java 에 복사하지 않는다(원본 `lib/answer-code.ts`)
-- 성공은 **`201` 본문 없음** · **`id` 를 응답에 넣지 않는다** — 프론트가 쓰지 않는다
-- 알고 받아들인 위험: 서버 쪽 중복·남용 방어 없음(중복 차단은 프론트 `sessionStorage` 뿐 · §4.4)
-
-**테스트 방식** (이후 슬라이스도 같다)
+**테스트 방식** (이후 슬라이스도 같다 · 예시는 `ParticipantLogControllerTest`)
 - `@SpringBootTest` + `@AutoConfigureMockMvc` + `MockMvcTester` + `@Transactional` — 실제 로컬 MySQL 에 붙고 테스트마다 롤백(테스트 전용 DB 는 MVP 에 과하다). 테스트 메서드 하나 = `http/participants.http` 요청 하나
-- **기존 행에 기대지 않는다** — 로컬 DB 마다 행이 다르다. 행 수는 전후 차이로, 방금 저장한 행은 `repository.findAll(Sort.by(Sort.Direction.DESC, "id")).getFirst()` 로 본다
-- 확인한 API (spring-test 7.0.8 · AssertJ 3.27.7): `assertThat(mvc.post().uri(…).contentType(MediaType.APPLICATION_JSON).content("""…"""))` 가 요청을 실행하고 `.hasStatus(HttpStatus.CREATED)` · `.hasStatusOk()` · `.headers().hasValue("Allow", "POST")` · `.bodyJson().isStrictlyEqualTo(…)` 로 검사한다. `assertThat` 은 `org.assertj.core.api.Assertions`
-- **빨간불 확인** — 통과한 테스트가 정말 잡아내는지, 지키는 코드를 잠깐 막고 실패를 본 뒤 되돌린다(F6-4 캐시 테스트에서 함 · F6-3 `@Valid` 는 2026-10-29 사용자 결정으로 건너뜀)
+- **기존 행에 기대지 않는다** — 로컬 DB 마다 행이 다르다. 행 수는 전후 차이로, 방금 저장한 행은 id 가 가장 큰 행으로 본다
+- **빨간불 확인** — 통과한 테스트가 정말 잡는지, 지키는 코드를 잠깐 막아 실패를 본 뒤 되돌린다
 
 ### ✅ F6-2 `participant_logs` 엔티티 · Repository — 2026-10-27 (PR #2 · `5559dd6`)
 
-**설계 원본** — 프론트 `docs/ARCHITECTURE.md` §5.2. 코드는 `participant/` 폴더가 원본이다.
+- **`protected` 빈 생성자** — Hibernate 가 행을 객체로 복원할 때 쓴다. 프록시가 자식 클래스라 `private` 은 안 된다
+- **Lombok 은 이 엔티티에 쓰지 않는다** — 무엇을 줄여 주는지 한 번은 직접 써 봐야 안다(학습 결정 · `build.gradle` 에 들어 있어도). 도입은 F7 `team_results`
 
-- **기능별 패키지** — `participant/` 에 엔티티 · Repository · Service · Controller (`domain/` · `repository/` 같은 계층별 폴더 안 씀). Spring Boot 문서 "Structuring Your Code" 예시가 기능별이고, 두 테이블이 외래키 없이 독립이다. 패키지는 DB 와 무관해서 나중에 바꿔도 된다
-- **5칸** — `answer_code VARCHAR(32)` NULL 허용. 분석용 · 기록하지 않은 답은 되살릴 수 없다 · 백엔드는 해석하지 않고 보관만 한다
-- **`ddl-auto`** = `${NEWBEEZ_DDL_AUTO:validate}` — 기본은 `validate`, 로컬 `.env` 에서만 `update`. 값을 안 준 환경(배포)에서 테이블이 멋대로 바뀌지 않게
-- **`created_at`** = 자바 `Instant` → **UTC 로 저장** — **Hibernate 가 UTC 달력을 붙여 JDBC 에 넘기기 때문**이다(드라이버가 바꾸는 게 아니다 · 2026-11-02 노트북 정정). 2026-10-26 측정: Java `07:57:29.28Z` = DB `07:57:29` = 로컬 KST 16:57:29 − 9시간. `datetime(0)` 이라 소수점 아래는 반올림 · Workbench 에서는 9시간 이르게 보인다
-- **생성자** — `public` 3개짜리(새 기록용 — `id` 는 안 받고 `createdAt` 은 안에서 `Instant.now()`) + `protected` 빈 생성자(Hibernate 가 행을 객체로 복원할 때 · 프록시가 자식 클래스라 `private` 불가)
-- **setter 없음** — getter 5개만. 참여 기록은 쌓기만 한다(append-only)
-- **Lombok 은 이 엔티티에 쓰지 않는다** — 무엇을 줄여 주는지 한 번은 직접 써 봐야 안다. F7 `team_results`(30칸)에서 도입
-- 이때 만든 `ParticipantLogRepositoryTest` 는 2026-10-29 삭제(`6489263`) — F6-3 Controller 테스트가 HTTP 부터 DB 까지 같은 것을 본다. ⚠️ 그 테스트가 실제로 확인한 것은 **INSERT 성공과 id 생성뿐**이었다(UTC·인덱스를 본 게 아님 · 노트북 정정). 내용은 `git show e8b1d13:src/test/java/com/newbeez/newbeezback/participant/ParticipantLogRepositoryTest.java`
-
-**만들어지는 테이블** — 칸이 알파벳순으로 나오는 것은 정상이다. F6.5 에서 Flyway `V1__participant_logs.sql` 로 옮긴다
+**만들어지는 테이블** — 지금 엔티티의 `ddl-auto=update` 결과 · 칸이 알파벳순인 것은 정상 · F6.5 에서 `V1__participant_logs.sql` 로 옮길 때 마지막 인덱스는 `idx_cat_created (category_slug, created_at)` 로 바꾼다(엔티티 `@Index` 도 같이 · 아래 F6.5 절)
 
 ```sql
 create table participant_logs (
@@ -165,6 +170,7 @@ create index idx_created on participant_logs (created_at);
 | 앱 전용 계정 `newbeez` | ✅ | ✅ (2026-10-20 `bootRun` 접속 성공) |
 | `.env` | ✅ | ✅ (2026-10-20 · 2026-11-02 있음 확인) |
 | `.env` 의 `NEWBEEZ_DDL_AUTO=update` | ✅ (2026-10-14) | ✅ (2026-10-20 · `SHOW CREATE TABLE` 이 F6-2 의 SQL 과 같음) |
+| `.env` 의 `NEWBEEZ_CORS_ALLOWED_ORIGINS=http://localhost:3000` (**F6-5 2-3 부터 필수** — 없으면 기동 실패 · 비어 있으면 켜지지만 브라우저 요청 전부 403) | ✅ (2026-11-05) | ⬜ |
 
 **⬜ 인 PC에서 할 일**
 
@@ -176,11 +182,12 @@ create index idx_created on participant_logs (created_at);
    ```
 2. `.env.example` 을 같은 폴더에 `.env` 로 복사하고 DB 값 3개를 채운다
    - `NEWBEEZ_DDL_AUTO=update` 줄은 **켜 둔다** — 켜져 있어야 엔티티대로 테이블이 생긴다(F6.5 Flyway 전환 때 지운다)
+   - `NEWBEEZ_CORS_ALLOWED_ORIGINS` 줄도 그대로 둔다(F6-5 2-3 부터 필수). **이미 `.env` 가 있는 PC 는 이 줄만 추가**한다 — `.env` 는 git 으로 오가지 않아서 `.env.example` 이 바뀌어도 저절로 생기지 않는다
 3. `./gradlew bootRun` → `Started NewbeezBackApplication` 이 찍히면 성공. 확인은 `http/participants.http` 의 ⑦(참여자 수)
 
-### 🧹 2026-09-04 — 레거시 폐기
+### 🧹 2026-09-04 레거시 폐기
 
-7월에 만든 `docs/`·`data/`·`Category.java`·`application.yml` 은 *백엔드가 채점하던 시절*의 설계(문항 10개 · 유클리드 · 백엔드 채점 · 테이블 4개)라 **전부 버리고** 스캐폴드 커밋(`03f9357`)으로 되돌렸다. 🔑 **교훈 — 설계를 두 레포에 복사해두면 한쪽만 낡는다** → [CLAUDE.md](CLAUDE.md) "여기에 설계를 복사하지 말 것". 15팀 좌표는 여전히 유효하고 원본은 프론트 `lib/clubs.ts` 다(백엔드는 좌표를 쓰지 않아 사본을 두지 않는다).
+백엔드가 채점하던 시절의 `docs/`·`data/`·코드를 전부 버리고 스캐폴드 커밋(`03f9357` · 2026-07-03)으로 되돌렸다(버린 파일은 git 기록에 없다) — 교훈은 [CLAUDE.md](CLAUDE.md) "여기에 설계를 복사해두지 말 것".
 
 ---
 
@@ -188,9 +195,12 @@ create index idx_created on participant_logs (created_at);
 
 ⚠️ **F6.5 함정 — 로컬 테이블은 Hibernate(`ddl-auto=update`)가 만들었다.** Flyway `V1__participant_logs.sql` 의 `create table` 이 "이미 있음"으로 실패한다 → 로컬 `participant_logs` 를 지우고 Flyway 가 만들게 하거나 baseline 설정. PC 마다 한 번씩(DB 가 PC 별로 따로라서)
 
-**⏸ `V1` 을 쓰기 전에 정할 것** (노트북 2026-10-27·11-02 · 사용자 결정 대기)
-- `createdAt` 을 Java 에서 **초 단위로 자를지** — `datetime(0)` 이 반올림하므로 저장한 Java 객체의 값과 DB 에 들어간 값의 초가 다를 수 있다
-- **`(category_slug, created_at)` 인덱스**를 둘지 — 지금은 `(category_slug, result_slug)` · `(created_at)` 두 개
+**✅ `V1` 에 넣을 것** (2026-11-09 사용자 결정 · 원본은 프론트 ARCHITECTURE §5.2 · 코드는 F6.5 에서 사용자가 친다 — F6-5 CORS 와 섞지 않는다)
+- **`createdAt` 은 초 단위로 자른다** — 생성자에서 `Instant.now().truncatedTo(ChronoUnit.SECONDS)`(`import java.time.temporal.ChronoUnit`). `datetime(0)` 이 반올림해서 저장한 Java 객체와 DB 값의 초가 달라지는 것을 막는다
+- **인덱스 `idx_created (created_at)` → `idx_cat_created (category_slug, created_at)`** — 엔티티 `@Index` 와 `V1` 의 `create index` 를 같은 모양으로. 쿼리가 전부 `category_slug` 로 시작한다(참여자 수 · 팀 순위 · 기간별 분석). 로컬 표는 위 함정대로 PC 마다 지우고 다시 만들 때 같이 바뀐다(`update` 는 옛 인덱스를 지우지 않는다)
+- ⚠️ **`created_at` 은 `datetime(0)` 유지 — `timestamp` ✗** — Hibernate 의 UTC 바인딩은 `DATETIME` 에서만 UTC 저장을 보장한다(2026-11-09 jar 확인)
+
+**⏸ F7 팀 소개 위치 재검토 중** (2026-11-09 · 사용자 결정 대기) — A 프론트 `lib/` 로 이동(추천 · 학습용 서버에 사이트 배포를 묶지 않는다) · B 백엔드 유지 + 빌드 때 안 부르기(배포 직후 백엔드가 죽어 있으면 첫 방문 500) · C 지금 설계. 호스팅 후보로 학습용 AWS 검토 중(FUTURE §4 는 AWS Free plan 을 "피할 것"으로 분류)
 
 **스키마·칸 설명·검증 규칙의 원본은 프론트 ARCHITECTURE §5.1** (여기에 복사하지 않는다). 백엔드가 알아야 할 것만:
 
@@ -214,6 +224,8 @@ create index idx_created on participant_logs (created_at);
 - 로그의 `The following 1 profile is active: "loc"` 는 `jun98` PC 의 사용자 환경변수 탓이다(다른 프로젝트용). 해롭지 않지만 **설정을 프로필에 기대면 안 되는 이유**다 → [CLAUDE.md](CLAUDE.md) 규칙
 - ⚠️ **PowerShell 에서 `curl` 은 `Invoke-WebRequest` 의 별칭이다** — `curl.exe` 로 쳐야 한다. 게다가 **Windows PowerShell 5.1 은 `curl.exe` 같은 프로그램에 넘기는 인자에서 큰따옴표를 지운다** — `-d '{"categorySlug":"football"}'` 가 `{categorySlug:football}` 로 넘어가 400 이 된다(측정). **요청은 `http/participants.http`(IntelliJ HTTP Client · 요청 옆 ▶)로 보낸다.** Postman CLI 도 이 PC 에 있다
 - ⚠️ **`.http` 를 "전체 실행"하면 전 → 행동 → 후 측정이 깨진다** — 값의 변화를 볼 땐 ▶ 를 하나씩. IntelliJ HTTP Client 는 `?categorySlug=` 를 `?categorySlug` 로 보낸다(로그 기준 · 400 은 같음)
+- ⚠️ **IntelliJ HTTP Client 는 응답 헤더를 파일로 남기지 않는다** — `.idea/httpRequests/` 에는 본문(`<시각>.<상태>.json`·`.txt`)과 요청 기록(`http-requests-log.http`)만 있다(2026-11-03 확인). 헤더를 봐야 하는 측정(CORS)은 응답 창을 보거나, 같은 요청을 Bash 의 `curl -s -i` 로 보낸다
+- ⚠️ **`Port 8080 was already in use` 는 이미 떠 있는 앱이 원인이다** — 2026-11-03: 11:19 에 IntelliJ ▶ 로 켠 newbeez 자신이 4시간 넘게 8080 을 쥐고 있었다. 누가 쓰는지는 PowerShell `Get-NetTCPConnection -LocalPort 8080 -State Listen` 의 `OwningProcess` 로 찾고, 프로세스 이름(`java.exe`)이 아니라 **실행 대상(main 클래스)**까지 본다. 실행은 한 방법(▶ 또는 `./gradlew bootRun`)만 쓰고, 측정 전에 `Started` 시각이 소스 저장보다 뒤인지 본다 — 옛 앱이 답하면 새 코드가 안 먹는 것처럼 보인다
 
 ### JPA · DB
 
@@ -226,7 +238,7 @@ create index idx_created on participant_logs (created_at);
 
 - ⚠️ **테스트는 로컬 DB `newbeez` 에 실제로 붙는다**(`bootRun` 과 같은 DB). `@Transactional` 이라 행은 남지 않는다. Spring 은 테스트 트랜잭션의 시작·롤백을 기본 로그(INFO)에 찍지 않는다 — 롤백은 Workbench 에서 실행 전후 `COUNT(*)` 가 같은지로 확인한다
 - ⚠️ **`@Transactional` 테스트 안에서 다시 읽은 값은 DB 값이 아니다** — 같은 트랜잭션이 들고 있는 객체가 그대로 돌아온다. DB 에 실제로 들어간 값(반올림된 시각 등)을 보려면 `flush` · `clear` 뒤에 읽는다(노트북 2026-10-27)
-- ⚠️ **캐시는 롤백되지 않는다** — 앱 메모리라 테스트 트랜잭션 밖이다. 캐시를 쓰는 기능의 테스트는 시작 전에 캐시를 비운다(F6-4 `@BeforeEach`)
+- ⚠️ **캐시는 롤백되지 않는다** — 앱 메모리라 테스트 트랜잭션 밖이다. 캐시를 쓰는 기능의 테스트는 시작 전에 캐시를 비운다(예: `ParticipantLogControllerTest` 의 `@BeforeEach`)
 - 테스트 데이터는 **프론트가 실제로 만들 수 있는 값**으로 — 답코드는 `032102223` 같은 9자리(노트북 2026-10-27)
 - ⚠️ **`@SpringBootTest` 없이 `@Autowired` 를 쓰면** IntelliJ 가 빨간 밑줄(`Autowired members must be defined in valid Spring bean`)을 띄우고, 실행하면 필드가 `null` 로 남아 **`NullPointerException`** 으로 실패한다(노트북 정정)
 - ⚠️ **통과한 테스트는 콘솔에 아무것도 안 찍는다** — `BUILD SUCCESSFUL` 대신 `build/test-results/test/TEST-*.xml` 의 tests·failures·시각으로 확인한다. 로그·`println` 도 거기 있다. 한 클래스만 실행은 `./gradlew test --tests "com.newbeez.newbeezback.participant.ParticipantLogControllerTest"`
@@ -273,6 +285,7 @@ create index idx_created on participant_logs (created_at);
 - `BAD_CODES` 2개 교체 — 길이 검사 변이를 audit 가 못 잡는다
 - ARCHITECTURE §9 #3 · #5 · #6 — #6(임베드 실기기)은 아이폰 카톡 인앱을 사용자가 확인했다
 - 노트북의 커밋 안 한 바이에른 변경 — 사용자 결정 대기
+- `app/football/quiz/_components/ParticipantCount.tsx` 주석의 `GET /api/v1/participants/count` — 주소 버전은 PR #4 에서 없앴다 → `/api/participants/count` (2026-11-03 발견)
 
 ---
 
@@ -280,6 +293,13 @@ create index idx_created on participant_logs (created_at);
 
 - **로컬 DB**: MySQL 8.0.x · `MySQL80` 서비스 · DB `newbeez` — **PC마다 따로 있고 내용이 오가지 않는다**(위 F6-1 표). ⚠️ 8.0 은 2026-04-30 에 지원이 끝난 버전이다. 로컬 학습용으론 문제없지만 **배포 DB는 8.4 이상**으로 고른다
 - **배포처**: 1순위 Oracle Cloud Always Free 서울(A1 + MySQL HeatWave 50GB). **결정은 D1 에서** — A1 확보가 복불복이라 미리 시도 권장. 근거는 프론트 `docs/FUTURE.md` §4. ⚠️ **필수 조건(2026-10-27): 유휴 회수가 없을 것** — Always Free 그대로면 7일 유휴 시 회수되므로 PAYG 전환이나 다른 호스팅이 필요하다(F7 이후 결과 페이지 빌드가 백엔드에 의존)
-- **D1 준비물** — Docker 28.5.2 가 `jun98` PC 에 있다(Dockerfile 시험 가능) · 레포에 Dockerfile 은 아직 없다 · `./gradlew build` 가 만드는 실행용 jar(`build/libs/newbeez-back-0.0.1-SNAPSHOT.jar` · 약 55MB · 라이브러리 포함)가 컨테이너에 넣을 파일이다. `-plain.jar` 는 우리 코드만이라 혼자 실행되지 않는다
+- **D1 준비물** — Docker 28.5.2 가 `jun98` PC 에 있다(Dockerfile 시험 가능) · 레포에 Dockerfile 은 아직 없다 · `./gradlew bootJar` 가 만드는 실행용 jar(`build/libs/newbeez-back-0.0.1-SNAPSHOT.jar` · 약 55MB · 라이브러리 포함 · 테스트를 안 돌려 DB 없이 만들어진다)가 컨테이너에 넣을 파일이다. `-plain.jar` 는 우리 코드만이라 혼자 실행되지 않는다
+- **D1 배포 확인에 넣을 것** — 운영 환경변수에 `NEWBEEZ_CORS_ALLOWED_ORIGINS`(운영 프론트 주소 · 로컬 주소는 빼도 된다)를 넣고, 띄운 뒤 **`Origin: <운영 프론트 주소>` 를 붙인 GET count(⑬ 모양)** 를 보내 `Access-Control-Allow-Origin` 이 오는지 본다 — 값이 비어 있으면 Origin 없는 확인(헬스 체크)은 200 이라 놓친다(F6-5 2-3 실측)
+- **D1 체크리스트** (2026-11-09 jar·공식 문서 검증 — 근거는 그날 커밋 본문)
+  - **이미지** — `./gradlew bootJar` · `.dockerignore` 에 `build/`·`.env`(없으면 낡은 `-plain.jar` 가 따라 들어가 `COPY *.jar` 가 깨진다) · `ENTRYPOINT` 는 exec form `["java","-jar",…]`(shell form 은 SIGTERM 을 못 받는다) · arm64 서버(Oracle A1 · AWS Graviton)면 `docker buildx build --platform linux/arm64`
+  - **종료** — graceful 은 Boot 3.4 부터 기본값이라 설정하지 않는다. `docker stop` 유예 10초가 Boot 대기 30초보다 짧으니 한쪽을 맞춘다
+  - **헬스** — `spring-boot-starter-actuator` 한 줄이면 `/actuator/health`(DB 가 죽으면 503 · 노출 기본값이 이미 health 뿐). ⚠️ DB 가 꺼진 채 기동하면 503 이 아니라 앱이 안 뜬다 → 호스팅 자동 재시작 설정과 함께 본다
+  - **시간대** — 운영 JDBC URL 끝에 `?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true`(`NOW()`·수동 INSERT 까지 UTC) · `hibernate.jdbc.time_zone` 은 넣지 않는다 · 배포 뒤 1회 실측
+  - **Testcontainers 는 F6.5 뒤** — 좌표는 2.x 이름(`org.testcontainers:testcontainers-mysql`) · 로컬 MySQL 대신 Docker 가 필요해진다
 - **락인 방어(지금부터 적용)**: 컨테이너화 · DB 접속은 환경변수로만 · Flyway · 트리거/프로시저 금지
 - **Instagram 임베드 테스트 페이지** `C:\dev\embed-test\index.html` (`이현준` PC · git 밖) — 327px 본문에 게시물/캡션/계정 카드 3종을 띄우고 렌더 시간·크기를 재는 정적 HTML. `python -m http.server 8000 --bind 127.0.0.1 --directory C:\dev\embed-test` 로 열람. 2026-10-20 PC 크롬 확인 · 아이폰 카톡 인앱은 사용자가 확인함(노트북 기록 · 프론트 §9 #6 반영은 위 "프론트에 넘길 것")
