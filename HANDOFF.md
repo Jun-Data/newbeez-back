@@ -7,16 +7,16 @@
 > - 작업 규칙(역할·커밋·브랜치·스택 주의점) → [CLAUDE.md](CLAUDE.md)
 > - 프론트 진행 상황 → 프론트 레포 `HANDOFF.md`
 
-**마지막 업데이트: 2026-11-20 (데스크톱)** — **F6-5 CORS 끝**(PR #8 · `a4185c9` · 테스트 16건) → **다음은 F6.5 Flyway**(브랜치 `feat/flyway` · 아직 시작 전 — 아래 "⬜ F6.5 Flyway" 절). 설계 검토 결정(2026-11-09)은 아래 F6.5 절 · 프론트 브랜치 `docs/review-decisions-2026-11-09`(원격에 올림 · PR 전) · D1 체크리스트는 맨 아래 "그 외". ⚠️ **노트북은 `.env` 에 `NEWBEEZ_CORS_ALLOWED_ORIGINS=http://localhost:3000` 줄부터 추가**(아래 F6-1 표 ⬜) — 없으면 앱·테스트가 뜨지 않는다 · 노트북에 쳐 둔 `CorsConfigTest`(3-1a)가 남아 있으면 버린다(완성본은 `main` 에 있다). F7 팀 소개 위치는 재검토 중(F6.5 절 ⏸)
-🔀 **브랜치** — F6.5 는 `feat/flyway` 에서 한다. 슬라이스 끝에 PR 하나 · `main` 에 직접 커밋·push 하지 않는다 — PR 로만 ([CLAUDE.md](CLAUDE.md))
+**마지막 업데이트: 2026-11-22 (노트북)** — **F6.5 Flyway 끝**(브랜치 `feat/flyway` · 테스트 16건 · **PR 대기**) → **다음은 D1 첫 배포**(호스팅은 **AWS 무료 플랜**으로 결정 2026-11-14 · 맨 아래 "그 외"). ⚠️ **데스크톱에서 이어갈 때: PR 머지 → `main` pull → 로컬 `participant_logs` 행 수 적고 `DROP` → `bootRun`**(Flyway 가 V1 로 다시 만든다 · 아래 "다른 PC" 절 1번) · `.env` 의 `NEWBEEZ_DDL_AUTO` 줄은 지운다. 설계 검토 결정(2026-11-09)은 프론트 브랜치 `docs/review-decisions-2026-11-09`(원격에 올림 · PR 전) · D1 체크리스트는 맨 아래 "그 외". F7 팀 소개 위치는 재검토 중(아래 F7 절 ⏸)
+🔀 **브랜치** — F6.5 는 `feat/flyway`(PR 대기) · D1 은 새 브랜치에서. 슬라이스 끝에 PR 하나 · `main` 에 직접 커밋·push 하지 않는다 — PR 로만 ([CLAUDE.md](CLAUDE.md))
 
 ### ▶ 다른 PC에서 이어갈 때
 
 대화 기록과 `.env`·DB 는 PC를 넘어가지 않는다. 넘어가는 것은 git 에 올린 것뿐이다. 떠나는 PC 에서 할 일은 [CLAUDE.md](CLAUDE.md) "PC 를 떠날 때".
 
-1. **백엔드** — `git fetch --prune` 후 작업 브랜치로(`git switch <브랜치>` · `git pull`). PR 이 이미 머지됐으면 `git switch main` · `git pull` 하고 머지된 로컬 브랜치는 `git branch -d` 로 지운다(옛 `feat/participant-log` · `feat/participant-api` · `feat/cors` 가 남아 있으면 같이) · ⚠️ **커밋 안 한 변경부터 치운다** — 원격에서 지운 파일(예: 2026-10-29 에 지운 `ParticipantLogRepositoryTest.java`)을 그 PC 에서 고치고 있었다면 `switch` 가 거부되지 않고 **그 파일을 새 브랜치로 조용히 들고 간다**(2026-11-02 노트북 재현). 먼저 커밋하거나 `git stash`
+1. **백엔드** — `git fetch --prune` 후 작업 브랜치로(`git switch <브랜치>` · `git pull`). PR 이 이미 머지됐으면 `git switch main` · `git pull` 하고 머지된 로컬 브랜치는 `git branch -d` 로 지운다(옛 `feat/participant-log` · `feat/participant-api` · `feat/cors` 가 남아 있으면 같이) · **F6.5 머지 뒤 그 PC 에서 처음 켤 때(PC 마다 한 번)**: Workbench `SELECT COUNT(*) FROM participant_logs;` 로 행 수를 적고 `DROP TABLE participant_logs;` → `bootRun` → Flyway 가 V1 로 다시 만들고 `flyway_schema_history` 가 생긴다. Hibernate 가 만든 옛 표를 두면 V1 의 `CREATE TABLE` 이 "이미 있음"으로 실패하고 장부에 `success=0` 행이 남는다(그러면 `flyway_schema_history` 도 `DROP` 하고 다시) · ⚠️ **커밋 안 한 변경부터 치운다** — 원격에서 지운 파일(예: 2026-10-29 에 지운 `ParticipantLogRepositoryTest.java`)을 그 PC 에서 고치고 있었다면 `switch` 가 거부되지 않고 **그 파일을 새 브랜치로 조용히 들고 간다**(2026-11-02 노트북 재현). 먼저 커밋하거나 `git stash`
 2. **프론트** — `git switch main` 후 `git pull` (§6 계약: PR #3 `POST /participants` · #4 주소 버전 제거 · #5 참여자 수 · #6 캐시 10초)
-3. **그 PC 의 준비** — 아래 F6-1 표에서 ⬜ 인 것부터(계정 · `.env` — `NEWBEEZ_DDL_AUTO=update` · F6-5 2-3 부터 `NEWBEEZ_CORS_ALLOWED_ORIGINS` 포함). `bootRun` 이 뜨면 그 PC 의 DB 에도 `participant_logs` 가 생긴 것이다 — Workbench `SHOW CREATE TABLE participant_logs;` 가 아래 F6-2 의 SQL 과 같은지 본다
+3. **그 PC 의 준비** — 아래 F6-1 표에서 ⬜ 인 것부터(계정 · `.env` — DB 3줄 + `NEWBEEZ_CORS_ALLOWED_ORIGINS` · `NEWBEEZ_DDL_AUTO` 는 **없어야** 한다). `bootRun` 이 뜨면 Flyway 가 그 PC 의 DB 에 `participant_logs` 와 `flyway_schema_history` 를 만든 것이다 — Workbench `SHOW CREATE TABLE participant_logs;` 가 `V1__participant_logs.sql` 과 같은 모양인지(칸 순서 그대로 · `KEY idx_cat_created`) 본다
 4. **IntelliJ 를 쓰면 세 가지를 먼저 본다** — `.idea` 는 git 이 무시해서 PC마다 설정이 다르다
    - **Project SDK 가 21 인가** (File → Project Structure → Project → SDK). `jun98` PC 에는 실험판 `valhalla-ea-23` 이 잡혀 있었다 → 2026-10-16 `ms-21` (21.0.11) 로 바꿈
    - **실행은 상단 드롭다운의 `NewbeezBackApplication`(Spring Boot) ▶** — Gradle 실행 설정은 task 칸이 비어 있으면 `> Task :help` 만 돌고 앱이 안 켜진다
@@ -38,8 +38,8 @@
 | **F6-4** | `GET /api/participants/count?categorySlug=` + **10초 캐시** | ✅ PR #7 `009796a` (2026-11-03) |
 | 선택 | **Redis 캐시 실습** — 학습용 · 배포에 넣지 않는다. 아래 F6-4 절 "선택 과제" | ⬜ 아무 때나 (2026-11-03 추가) |
 | **F6-5** | **CORS** — 브라우저가 직접 부르는 두 엔드포인트만 | ✅ PR #8 `a4185c9` (2026-11-20) |
-| **F6.5** | **Flyway 전환** — `V1__participant_logs.sql` · `ddl-auto` 는 `validate` 고정 | ⬜ **← 다음** (`feat/flyway`) · 배포 전 (2026-10-27 F7 앞에서 배포 앞으로 이동) |
-| **D1** | **첫 배포** — Dockerfile · 운영 MySQL 8.4 · 환경변수 · 유휴 회수 없는 호스팅 | ⬜ 2026-10-27 추가 |
+| **F6.5** | **Flyway 전환** — `V1__participant_logs.sql` · `ddl-auto` 는 `validate` 고정 | ✅ 2026-11-22 (`feat/flyway` · **PR 대기**) |
+| **D1** | **첫 배포** — Dockerfile · 운영 MySQL 8.4 · 환경변수 · 유휴 회수 없는 호스팅(**AWS 무료 플랜** · 2026-11-14 결정) | ⬜ **← 다음** |
 | 연동 | 프론트가 완료 시 `POST` + `ParticipantCount` — 실제 참여자 수·답코드가 쌓이기 시작 | ⬜ (프론트 작업) |
 | F7 | `team_results`(읽기 전용 · Flyway `V2__` + `R__` 시드 15행) + `GET /results` | ⬜ **배포·연동 뒤** — 설계 확정 2026-10-20 · 백엔드 유지 2026-10-27. 상세는 아래 "F7 설계 확정" |
 
@@ -53,6 +53,17 @@
 ## ✅ 끝난 슬라이스 — 결론만
 
 > 계약·스키마의 원본은 프론트 ARCHITECTURE(§5·§6), 구현의 원본은 코드다. 여기에는 **코드와 설계 문서만 봐서는 모르는 이유·규칙**과 **다른 절이 가리키는 것**(F6-1 PC별 표·절차 · F6-2 비교용 SQL)만 둔다. 측정과 과정은 각 PR 의 커밋 본문에, 줄이기 전 전문은 `git show 8adc89f:HANDOFF.md` 에 있다(2026-11-09 압축 · PR 은 지금처럼 merge 커밋으로 — squash 하면 이 해시가 사라진다). F6-5 절의 줄이기 전 전문(진행 표 · 측정 · 3단계 메모)은 `git show 0b28efa:HANDOFF.md`(2026-11-20 압축).
+
+### ✅ F6.5 Flyway 전환 — 2026-11-22 (`feat/flyway` · PR 대기)
+
+- **테이블의 원본은 `src/main/resources/db/migration/V1__participant_logs.sql`, 엔티티는 따라가는 쪽.** `application.yml` 의 `ddl-auto: validate` 는 **글자로 고정**(환경변수 `${…}` 없음) — 어느 PC 에 옛 `NEWBEEZ_DDL_AUTO=update` 가 남아 있어도 Hibernate 가 Flyway 몰래 테이블을 못 만진다. `validate` 는 칸 이름·타입만 보고 **인덱스·VARCHAR 길이·칸 순서는 안 본다** → 엔티티의 `@Index`·`length` 는 설명용이지만 V1 과 같은 모양으로 둔다(코드가 거짓말하지 않게)
+- **적용된 `V` 파일은 고치지 않는다 — 바꾸려면 `V2`.** 체크섬 = 파일을 줄 단위로 읽어 각 줄의 UTF-8 바이트를 CRC32 에 넣은 값(`flyway-core` 12.4.0 `ChecksumCalculator` javap · 장부 값 668339657 을 Python 으로 재현). **보는 것**: 글자 · 주석 · 줄 끝 공백. **안 보는 것**: 빈 줄 · CRLF/LF · 파일 끝 줄바꿈 → Windows/Linux 체크섬이 같다. 실측(2026-11-22): 주석 한 줄 추가 → 기동 실패 `Validate failed … Applied to database 668339657 / Resolved locally -285027153` · DB 는 그대로(운영이면 "새 버전이 안 뜨고 옛 버전이 계속 돈다"). `repair`(장부 체크섬을 지금 파일 값으로 덮어쓰기)는 주석 오타 정도에만
+- **기동 순서** Hikari → Flyway(validate → migrate) → Hibernate validate → Tomcat. Boot 가 `entityManagerFactory` 를 `flywayInitializer` 에 의존시킨다(실패 메시지 첫 줄에 그대로 보인다). 매 기동 Flyway 로그 4줄(`Database: … (MySQL 8.0)` · `Successfully validated 1 migration` · `Current version of schema: 1` · `up to date. No migration necessary`) · **Hibernate validate 는 통과하면 무음** · Flyway 의 "validated" 는 테이블이 아니라 **파일 ↔ 장부** 대조라 표를 만들기 전에도 통과한다
+- 의존성 `implementation spring-boot-starter-flyway`(→ `spring-boot-flyway` 4.1.0 + `flyway-core` 12.4.0 + `starter-jdbc`) + `runtimeOnly org.flywaydb:flyway-mysql`(Flyway 10 부터 DB 별 모듈 분리 · 없으면 `No database found to handle jdbc:mysql`). `application.yml` 에 Flyway 키 없음 — jar 가 있으면 자동 설정이 켠다(`db/migration` 기본 위치). MySQL 8.0.46 에 경고 없음
+- `flyway_schema_history` 1행 — `installed_on` 은 **세션 시간대(KST)** 라 `created_at` 의 UTC 와 다르다(D1 의 JDBC UTC 옵션을 넣으면 같아진다) · `installed_rank`(실행 순번) ≠ `version`(파일 이름) · `description` 은 파일 이름의 밑줄을 공백으로 · 실패하면 `success=0` 행이 남아 다음 기동을 막는다
+- **로컬 전환은 PC 마다 한 번** — 행 수 적고 `DROP TABLE participant_logs;` → `bootRun`(위 "다른 PC" 절 1번). 테스트도 `@SpringBootTest` 마다 Flyway 가 돈다(앱 3개 → `up to date` 3번) · 16건 통과 · 테스트 롤백은 장부에 영향 없음
+- `V1` 에 2026-11-09 결정 반영 — 인덱스 `idx_cat_created (category_slug, created_at)` · 생성자 `Instant.now().truncatedTo(ChronoUnit.SECONDS)`(`import java.time.temporal.ChronoUnit`) · `created_at DATETIME`(= `(0)` · `timestamp` ✗) · 칸 순서는 설계 순서(Hibernate 의 알파벳순 아님) · `ENGINE`·`CHARSET` 은 안 적고 서버 기본값(8.0·8.4 모두 InnoDB·utf8mb4). 전환 전 HANDOFF(함정·V1 계획 원문)는 `git show c53dc1b:HANDOFF.md`
+- **설명이 통한 방식** — `SHOW CREATE TABLE` 로 "지금 상태"를 먼저 보고(과거 명령이 아니라 현재 구조를 MySQL 이 다시 쓴 것) · "Hibernate 가 추측한다"는 "엔티티에 없는 것(타입 변환·이름 규칙·칸 순서·`ENGINE`)을 규칙으로 채운다"로 바꿔 표로 대조 · 체크섬은 **실행 전에 숫자를 예측**(Python CRC32)하고 오류 문구의 두 숫자로 확인 · 빈 줄을 넣었는데 통과한 것이 "체크섬이 안 보는 것"을 가르친 지점
 
 ### ✅ F6-5 CORS — 2026-11-20 (PR #8 · `a4185c9`)
 
@@ -97,20 +108,7 @@
 - **`protected` 빈 생성자** — Hibernate 가 행을 객체로 복원할 때 쓴다. 프록시가 자식 클래스라 `private` 은 안 된다
 - **Lombok 은 이 엔티티에 쓰지 않는다** — 무엇을 줄여 주는지 한 번은 직접 써 봐야 안다(학습 결정 · `build.gradle` 에 들어 있어도). 도입은 F7 `team_results`
 
-**만들어지는 테이블** — 지금 엔티티의 `ddl-auto=update` 결과 · 칸이 알파벳순인 것은 정상 · F6.5 에서 `V1__participant_logs.sql` 로 옮길 때 마지막 인덱스는 `idx_cat_created (category_slug, created_at)` 로 바꾼다(엔티티 `@Index` 도 같이 · 아래 F6.5 절)
-
-```sql
-create table participant_logs (
-    id bigint not null auto_increment,
-    answer_code varchar(32),
-    category_slug varchar(32) not null,
-    created_at datetime(0) not null,
-    result_slug varchar(32) not null,
-    primary key (id)
-);
-create index idx_cat_slug on participant_logs (category_slug, result_slug);
-create index idx_created on participant_logs (created_at);
-```
+**테이블의 원본은 F6.5 부터 `src/main/resources/db/migration/V1__participant_logs.sql` 이다** — Hibernate 가 `update` 로 만들던 시절의 SQL(알파벳순 칸 · `idx_created`)은 `git show c53dc1b:HANDOFF.md` 에 있다. 엔티티의 `@Index` 는 V1 과 같은 모양으로 유지한다(위 F6.5 절)
 
 ### ✅ F6-1 DB 설정 — 2026-10-06 (`44e2283`)
 
@@ -124,8 +122,10 @@ create index idx_created on participant_logs (created_at);
 | DB `newbeez` | ✅ | ✅ (2026-09-04 기록) |
 | 앱 전용 계정 `newbeez` | ✅ | ✅ (2026-10-20 `bootRun` 접속 성공) |
 | `.env` | ✅ | ✅ (2026-10-20 · 2026-11-02 있음 확인) |
-| `.env` 의 `NEWBEEZ_DDL_AUTO=update` | ✅ (2026-10-14) | ✅ (2026-10-20 · `SHOW CREATE TABLE` 이 F6-2 의 SQL 과 같음) |
-| `.env` 의 `NEWBEEZ_CORS_ALLOWED_ORIGINS=http://localhost:3000` (**F6-5 2-3 부터 필수** — 없으면 기동 실패 · 비어 있으면 켜지지만 브라우저 요청 전부 403) | ✅ (2026-11-05) | ⬜ |
+| `.env` 의 `NEWBEEZ_CORS_ALLOWED_ORIGINS=http://localhost:3000` (**F6-5 2-3 부터 필수** — 없으면 기동 실패 · 비어 있으면 켜지지만 브라우저 요청 전부 403) | ✅ (2026-11-05) | ✅ (2026-11-20) |
+| `.env` 에서 `NEWBEEZ_DDL_AUTO` 줄 **삭제** (F6.5 · 남아 있어도 무시되지만 치운다) | ⬜ | ✅ (2026-11-22) |
+| 로컬 `participant_logs` 를 Flyway 가 만든 것으로 교체 — 행 수 적고 `DROP` → `bootRun` (F6.5 · 위 "다른 PC" 절 1번) | ⬜ (`.http` 손 요청 행이 있다 — 잃어도 되는 학습 데이터) | ✅ (2026-11-22 · 행 0개였음) |
+| `GRADLE_USER_HOME=C:\dev\gradle-home` 사용자 환경변수 (**한글 사용자명 PC 만** · 아래 함정 모음) | 불필요 (`jun98` 은 ASCII) | ✅ (2026-11-22) |
 
 **⬜ 인 PC에서 할 일**
 
@@ -136,9 +136,8 @@ create index idx_created on participant_logs (created_at);
    GRANT ALL PRIVILEGES ON newbeez.* TO 'newbeez'@'localhost';
    ```
 2. `.env.example` 을 같은 폴더에 `.env` 로 복사하고 DB 값 3개를 채운다
-   - `NEWBEEZ_DDL_AUTO=update` 줄은 **켜 둔다** — 켜져 있어야 엔티티대로 테이블이 생긴다(F6.5 Flyway 전환 때 지운다)
-   - `NEWBEEZ_CORS_ALLOWED_ORIGINS` 줄도 그대로 둔다(F6-5 2-3 부터 필수). **이미 `.env` 가 있는 PC 는 이 줄만 추가**한다 — `.env` 는 git 으로 오가지 않아서 `.env.example` 이 바뀌어도 저절로 생기지 않는다
-3. `./gradlew bootRun` → `Started NewbeezBackApplication` 이 찍히면 성공. 확인은 `http/participants.http` 의 ⑦(참여자 수)
+   - `NEWBEEZ_CORS_ALLOWED_ORIGINS` 줄은 그대로 둔다(F6-5 2-3 부터 필수). **이미 `.env` 가 있는 PC 는 `.env.example` 과 줄을 맞춘다** — `.env` 는 git 으로 오가지 않아서 `.env.example` 이 바뀌어도 저절로 바뀌지 않는다(옛 `NEWBEEZ_DDL_AUTO` 줄은 지운다)
+3. `./gradlew bootRun` → Flyway 의 `Migrating schema \`newbeez\` to version "1 - participant logs"` 와 `Started NewbeezBackApplication` 이 찍히면 성공. 확인은 `http/participants.http` 의 ⑦(참여자 수)
 
 ### 🧹 2026-09-04 레거시 폐기
 
@@ -146,22 +145,15 @@ create index idx_created on participant_logs (created_at);
 
 ---
 
-## ⬜ F6.5 Flyway (배포 전) + F7 `team_results` (배포·연동 뒤) — 설계 확정 (2026-10-20)
+## ⬜ F7 `team_results` (배포·연동 뒤) — 설계 확정 (2026-10-20)
 
-⚠️ **F6.5 함정 — 로컬 테이블은 Hibernate(`ddl-auto=update`)가 만들었다.** Flyway `V1__participant_logs.sql` 의 `create table` 이 "이미 있음"으로 실패한다 → 로컬 `participant_logs` 를 지우고 Flyway 가 만들게 하거나 baseline 설정. PC 마다 한 번씩(DB 가 PC 별로 따로라서)
-
-**✅ `V1` 에 넣을 것** (2026-11-09 사용자 결정 · 원본은 프론트 ARCHITECTURE §5.2 · 코드는 F6.5 에서 사용자가 친다)
-- **`createdAt` 은 초 단위로 자른다** — 생성자에서 `Instant.now().truncatedTo(ChronoUnit.SECONDS)`(`import java.time.temporal.ChronoUnit`). `datetime(0)` 이 반올림해서 저장한 Java 객체와 DB 값의 초가 달라지는 것을 막는다
-- **인덱스 `idx_created (created_at)` → `idx_cat_created (category_slug, created_at)`** — 엔티티 `@Index` 와 `V1` 의 `create index` 를 같은 모양으로. 쿼리가 전부 `category_slug` 로 시작한다(참여자 수 · 팀 순위 · 기간별 분석). 로컬 표는 위 함정대로 PC 마다 지우고 다시 만들 때 같이 바뀐다(`update` 는 옛 인덱스를 지우지 않는다)
-- ⚠️ **`created_at` 은 `datetime(0)` 유지 — `timestamp` ✗** — Hibernate 의 UTC 바인딩은 `DATETIME` 에서만 UTC 저장을 보장한다(2026-11-09 jar 확인)
-
-**⏸ F7 팀 소개 위치 재검토 중** (2026-11-09 · 사용자 결정 대기) — A 프론트 `lib/` 로 이동(추천 · 학습용 서버에 사이트 배포를 묶지 않는다) · B 백엔드 유지 + 빌드 때 안 부르기(배포 직후 백엔드가 죽어 있으면 첫 방문 500) · C 지금 설계. 호스팅 후보로 학습용 AWS 검토 중(FUTURE §4 는 AWS Free plan 을 "피할 것"으로 분류)
+**⏸ F7 팀 소개 위치 재검토 중** (2026-11-09 · 사용자 결정 대기) — A 프론트 `lib/` 로 이동(추천 · 학습용 서버에 사이트 배포를 묶지 않는다) · B 백엔드 유지 + 빌드 때 안 부르기(배포 직후 백엔드가 죽어 있으면 첫 방문 500) · C 지금 설계. 호스팅은 AWS 무료 플랜으로 결정됐다(2026-11-14 · 맨 아래 "그 외") — 위치 결정만 남았다
 
 **스키마·칸 설명·검증 규칙의 원본은 프론트 ARCHITECTURE §5.1** (여기에 복사하지 않는다). 백엔드가 알아야 할 것만:
 
 - **읽기 전용 테이블.** 엔티티는 setter 없음 + `@org.hibernate.annotations.Immutable`(ORM 애노테이션 — "벤더 함수 금지" 규칙과 무관) · Repository 는 조회만. 배치·동기화 코드 없음 — 옛 "하이브리드(API 동기화 영역)" 설계는 폐기됐다
 - **데이터는 Flyway 시드 파일이 진실** — `src/main/resources/db/migration/`: DDL 은 `V1__participant_logs.sql`·`V2__team_results.sql`, **15행은 `R__team_results_seed.sql`**(`DELETE … WHERE category_slug='football'; INSERT …`). DDL 과 DML 을 한 파일에 섞지 않는다(MySQL DDL 암묵적 커밋). 각 행 주석에 출처 URL·확인일. 벤더 구문(`ON DUPLICATE KEY UPDATE`) ✗
-- **Flyway 도입과 동시에 `.env` 의 `NEWBEEZ_DDL_AUTO=update` 를 지운다** — Hibernate 가 Flyway 밖에서 스키마를 바꾸면 드리프트. `validate` 는 유지하되 엔티티 `@Column(length…)`·타입을 DDL 과 맞춰야 기동된다(`validate` 는 VARCHAR 길이는 검사하지 않음). 의존성 `spring-boot-starter-flyway` + `org.flywaydb:flyway-mysql`(Spring Boot 4.1 → Flyway 12.4). MySQL 8.4 는 문서 목록에 없지만 Redgate 가 지원 확인(2026-08) — 배포 DB 로 1회 검증
+- Flyway 는 F6.5 에서 도입됐다(위 ✅ F6.5 절) — `V2__team_results.sql` 은 같은 폴더에 다음 번호로. MySQL 8.4 는 Flyway 문서 목록에 없지만 Redgate 가 지원 확인(2026-08) — D1 에서 1회 검증
 - **`kit_post_url` 정규화·검증은 Java** — 쿼리스트링 제거 → `https://www.instagram.com/p/{code}/` → `@Pattern`(validation 은 F6-3 에서 이미 추가). 사진 게시물 여부는 등록 체크리스트
 - **`GET /results` 응답 형태**는 ARCHITECTURE §6 에 적혀 있다 — `kit: { postUrl, seasonLabel } | null`. 프론트는 실패 시 던지므로(빌드 fail-fast) **백엔드가 먼저 떠 있어야 프론트 S8 이 배포된다**
 - Lombok 은 여기서 도입(기존 결정 유지)
@@ -180,12 +172,13 @@ create index idx_created on participant_logs (created_at);
 - ⚠️ **PowerShell 에서 `curl` 은 `Invoke-WebRequest` 의 별칭이다** — `curl.exe` 로 쳐야 한다. 게다가 **Windows PowerShell 5.1 은 `curl.exe` 같은 프로그램에 넘기는 인자에서 큰따옴표를 지운다** — `-d '{"categorySlug":"football"}'` 가 `{categorySlug:football}` 로 넘어가 400 이 된다(측정). **요청은 `http/participants.http`(IntelliJ HTTP Client · 요청 옆 ▶)로 보낸다.** Postman CLI 도 이 PC 에 있다
 - ⚠️ **`.http` 를 "전체 실행"하면 전 → 행동 → 후 측정이 깨진다** — 값의 변화를 볼 땐 ▶ 를 하나씩. IntelliJ HTTP Client 는 `?categorySlug=` 를 `?categorySlug` 로 보낸다(로그 기준 · 400 은 같음)
 - ⚠️ **IntelliJ HTTP Client 는 응답 헤더를 파일로 남기지 않는다** — `.idea/httpRequests/` 에는 본문(`<시각>.<상태>.json`·`.txt`)과 요청 기록(`http-requests-log.http`)만 있다(2026-11-03 확인). 헤더를 봐야 하는 측정(CORS)은 응답 창을 보거나, 같은 요청을 Bash 의 `curl -s -i` 로 보낸다
-- ⚠️ **`Port 8080 was already in use` 는 이미 떠 있는 앱이 원인이다** — 2026-11-03: 11:19 에 IntelliJ ▶ 로 켠 newbeez 자신이 4시간 넘게 8080 을 쥐고 있었다. 누가 쓰는지는 PowerShell `Get-NetTCPConnection -LocalPort 8080 -State Listen` 의 `OwningProcess` 로 찾고, 프로세스 이름(`java.exe`)이 아니라 **실행 대상(main 클래스)**까지 본다. 실행은 한 방법(▶ 또는 `./gradlew bootRun`)만 쓰고, 측정 전에 `Started` 시각이 소스 저장보다 뒤인지 본다 — 옛 앱이 답하면 새 코드가 안 먹는 것처럼 보인다
+- ⚠️ **`Port 8080 was already in use` 는 이미 떠 있는 앱이 원인이다** — 2026-11-03: 11:19 에 IntelliJ ▶ 로 켠 newbeez 자신이 4시간 넘게 8080 을 쥐고 있었다. 누가 쓰는지는 PowerShell `Get-NetTCPConnection -LocalPort 8080 -State Listen` 의 `OwningProcess` 로 찾고, 프로세스 이름(`java.exe`)이 아니라 **실행 대상(main 클래스)**까지 본다. 실행은 한 방법(▶ 또는 `./gradlew bootRun`)만 쓰고, 측정 전에 `Started` 시각이 소스 저장보다 뒤인지 본다 — 옛 앱이 답하면 새 코드가 안 먹는 것처럼 보인다. 듣는 것이 없으면 빈 출력이 아니라 빨간 `ObjectNotFound` 오류가 나온다 — 그게 "없음"이다(2026-11-22)
+- 🚨 **한글 사용자명 PC(노트북 `이현준`)에서 `./gradlew test` 가 테스트를 하나도 못 돌리고 `ClassNotFoundException: worker.org.gradle.process.internal.worker.GradleWorkerMain` 으로 죽는다** — Gradle 9.5.1 이 테스트 JVM 의 클래스패스를 `<GRADLE_USER_HOME>/.tmp/gradle-worker-classpath…txt` 인자 파일(`java @파일`)에 UTF-8 로 쓰는데 JDK 런처(Corretto 21 · OpenJDK 24 모두)는 `@파일` 을 시스템 코드페이지 CP949 로 읽어 `이현준` 이 깨진다(2026-11-22 · 같은 내용을 CP949 로 쓰면 성공하는 실험으로 확정). `bootRun`·IntelliJ ▶ 는 이 경로를 안 타서 멀쩡하다 → 사용자 환경변수 `GRADLE_USER_HOME=C:\dev\gradle-home` 으로 옮기고 **IntelliJ 재시작**(Settings → Build Tools → Gradle 의 Gradle user home 도 같은 값인지). 배포판·캐시를 다시 받는다(수백 MB). `jun98` 은 ASCII 라 해당 없음
 
 ### JPA · DB
 
 - ⚠️ **`import` 는 보이는 대로 직접 친다** — 이름이 같은 다른 타입이 있어 IntelliJ 자동 가져오기가 엉뚱한 것을 잡는다. 우리가 쓰는 것은 `jakarta.persistence.Id`(Spring Data 의 `@Id` 아님) · `org.springframework.transaction.annotation.Transactional`(`jakarta.transaction` 쪽 아님)
-- ⚠️ **`update` 는 추가만 한다.** 필드 이름을 바꾸면 옛 컬럼이 남는다 → Workbench 에서 테이블을 지우고 다시 켠다. 인덱스는 만든다(`SHOW CREATE TABLE` 에 `KEY` 2줄). MySQL 은 `datetime(0)` 을 `datetime` 으로 표시한다 — `(6)` 이 보이면 `secondPrecision` 이 안 먹은 것
+- ⚠️ **테이블은 Flyway 의 `V` 파일로만 바뀐다(F6.5).** 엔티티를 고쳐도 테이블은 안 바뀌고, 칸 이름·타입이 어긋나면 `validate` 가 기동을 멈춘다 → `V2__…sql` 을 쓰고 엔티티를 맞춘다. MySQL 은 `datetime(0)` 을 `datetime` 으로 표시한다 — `(6)` 이 보이면 정밀도가 안 먹은 것
 - ⚠️ **Hibernate 가 실행한 SQL 은 로그에 안 나온다** — `application.yml` 에 `show-sql` 이 없다. 테이블이 바뀌었는지는 Workbench 로 본다
 - ⚠️ **auto_increment 번호는 롤백돼도 소비된다** — id 에 빈 번호가 생기는 게 정상이다. 참여자 수는 `COUNT(*)` 로 세고 `MAX(id)` 로 세지 않는다
 
@@ -252,7 +245,7 @@ create index idx_created on participant_logs (created_at);
 ## 그 외
 
 - **로컬 DB**: MySQL 8.0.x · `MySQL80` 서비스 · DB `newbeez` — **PC마다 따로 있고 내용이 오가지 않는다**(위 F6-1 표). ⚠️ 8.0 은 2026-04-30 에 지원이 끝난 버전이다. 로컬 학습용으론 문제없지만 **배포 DB는 8.4 이상**으로 고른다
-- **배포처**: 1순위 Oracle Cloud Always Free 서울(A1 + MySQL HeatWave 50GB). **결정은 D1 에서** — A1 확보가 복불복이라 미리 시도 권장. 근거는 프론트 `docs/FUTURE.md` §4. ⚠️ **필수 조건(2026-10-27): 유휴 회수가 없을 것** — Always Free 그대로면 7일 유휴 시 회수되므로 PAYG 전환이나 다른 호스팅이 필요하다(F7 이후 결과 페이지 빌드가 백엔드에 의존)
+- **배포처: AWS 무료 플랜으로 결정 (2026-11-14 · 만료 2027-05-14)** — 근거는 프론트 `docs/FUTURE.md` §4(프론트 `main` 의 `0cbb130` · PR #9 로 머지됨 · 옛 §4 는 AWS Free 를 "피할 것"으로 분류했었다). 옛 1순위 Oracle Always Free 는 폐기. ⚠️ **필수 조건(2026-10-27): 유휴 회수가 없을 것**(F7 이후 결과 페이지 빌드가 백엔드에 의존) · 만료 전에 다음 호스팅을 정한다
 - **D1 준비물** — Docker 28.5.2 가 `jun98` PC 에 있다(Dockerfile 시험 가능) · 레포에 Dockerfile 은 아직 없다 · `./gradlew bootJar` 가 만드는 실행용 jar(`build/libs/newbeez-back-0.0.1-SNAPSHOT.jar` · 약 55MB · 라이브러리 포함 · 테스트를 안 돌려 DB 없이 만들어진다)가 컨테이너에 넣을 파일이다. `-plain.jar` 는 우리 코드만이라 혼자 실행되지 않는다
 - **D1 배포 확인에 넣을 것** — 운영 환경변수에 `NEWBEEZ_CORS_ALLOWED_ORIGINS`(운영 프론트 주소 · 로컬 주소는 빼도 된다)를 넣고, 띄운 뒤 **`Origin: <운영 프론트 주소>` 를 붙인 GET count(⑬ 모양)** 를 보내 `Access-Control-Allow-Origin` 이 오는지 본다 — 값이 비어 있으면 Origin 없는 확인(헬스 체크)은 200 이라 놓친다(F6-5 2-3 실측)
 - **D1 체크리스트** (2026-11-09 jar·공식 문서 검증 — 근거는 그날 커밋 본문)
@@ -260,6 +253,7 @@ create index idx_created on participant_logs (created_at);
   - **종료** — graceful 은 Boot 3.4 부터 기본값이라 설정하지 않는다. `docker stop` 유예 10초가 Boot 대기 30초보다 짧으니 한쪽을 맞춘다
   - **헬스** — `spring-boot-starter-actuator` 한 줄이면 `/actuator/health`(DB 가 죽으면 503 · 노출 기본값이 이미 health 뿐). ⚠️ DB 가 꺼진 채 기동하면 503 이 아니라 앱이 안 뜬다 → 호스팅 자동 재시작 설정과 함께 본다
   - **시간대** — 운영 JDBC URL 끝에 `?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true`(`NOW()`·수동 INSERT 까지 UTC) · `hibernate.jdbc.time_zone` 은 넣지 않는다 · 배포 뒤 1회 실측
+  - **DB** — 운영 DB 는 **빈 DB** 로 만들고 첫 기동 때 Flyway 가 `V1` 로 표를 만든다(baseline 불필요 · 로컬처럼 `DROP` 할 것이 없다). MySQL 8.4 + Flyway 12.4 조합은 여기서 1회 검증 · 기동 로그에 `Migrating schema … to version "1 - participant logs"` 가 찍히는지 본다
   - **Testcontainers 는 F6.5 뒤** — 좌표는 2.x 이름(`org.testcontainers:testcontainers-mysql`) · 로컬 MySQL 대신 Docker 가 필요해진다
 - **락인 방어(지금부터 적용)**: 컨테이너화 · DB 접속은 환경변수로만 · Flyway · 트리거/프로시저 금지
 - **Instagram 임베드 테스트 페이지** `C:\dev\embed-test\index.html` (`이현준` PC · git 밖) — 327px 본문에 게시물/캡션/계정 카드 3종을 띄우고 렌더 시간·크기를 재는 정적 HTML. `python -m http.server 8000 --bind 127.0.0.1 --directory C:\dev\embed-test` 로 열람. 2026-10-20 PC 크롬 확인 · 아이폰 카톡 인앱은 사용자가 확인함(노트북 기록 · 프론트 §9 #6 반영은 위 "프론트에 넘길 것")

@@ -14,7 +14,7 @@ spring:
     password: ${NEWBEEZ_DB_PASSWORD}
   jpa:
     hibernate:
-      ddl-auto: ${NEWBEEZ_DDL_AUTO:validate}
+      ddl-auto: validate
     open-in-view: false
 newbeez:
   cors:

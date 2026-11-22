@@ -3,11 +3,12 @@ package com.newbeez.newbeezback.participant;
 import jakarta.persistence.*;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 @Entity
 @Table(name = "participant_logs", indexes = {
         @Index(name = "idx_cat_slug", columnList = "category_slug, result_slug"),
-        @Index(name = "idx_created", columnList = "created_at")
+        @Index(name = "idx_cat_created", columnList = "category_slug, created_at")
 })
 public class ParticipantLog {
     @Id
@@ -33,7 +34,7 @@ public class ParticipantLog {
         this.categorySlug = categorySlug;
         this.resultSlug = resultSlug;
         this.answerCode = answerCode;
-        this.createdAt = Instant.now();
+        this.createdAt = Instant.now().truncatedTo(ChronoUnit.SECONDS);
     }
 
     public Long getId() {
