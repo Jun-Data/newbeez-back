@@ -7,7 +7,7 @@
 > - 작업 규칙(역할·커밋·브랜치·스택 주의점) → [CLAUDE.md](CLAUDE.md)
 > - 프론트 진행 상황 → 프론트 레포 `HANDOFF.md`
 
-**마지막 업데이트: 2026-11-23 (데스크톱)** — **F6.5 Flyway 머지됨**(PR #9 · `4d10883` · 테스트 16건) · **두 PC 모두 로컬 전환 끝**(데스크톱 2026-11-23) → **D1 첫 배포 진행 중**(브랜치 `feat/deploy` · 2단계 이미지까지 끝 · **다음 3단계 컨테이너 실행** — 아래 "D1 진행" · 호스팅은 **AWS 무료 플랜**으로 결정 2026-11-14 · 맨 아래 "그 외"). 설계 검토 결정(2026-11-09)은 프론트 브랜치 `docs/review-decisions-2026-11-09`(원격에 올림 · PR 전) · D1 체크리스트는 맨 아래 "그 외". F7 팀 소개 위치는 재검토 중(아래 F7 절 ⏸)
+**마지막 업데이트: 2026-11-23 (데스크톱)** — **F6.5 Flyway 머지됨**(PR #9 · `4d10883` · 테스트 16건) · **두 PC 모두 로컬 전환 끝**(데스크톱 2026-11-23) → **D1 첫 배포 진행 중**(브랜치 `feat/deploy` · 3단계 컨테이너 실행까지 끝 · **다음 빈 MySQL 8.4 예행 → 4단계 AWS** — 아래 "D1 진행" · 호스팅은 **AWS 무료 플랜**으로 결정 2026-11-14 · 맨 아래 "그 외"). 설계 검토 결정(2026-11-09)은 프론트 브랜치 `docs/review-decisions-2026-11-09`(원격에 올림 · PR 전) · D1 체크리스트는 맨 아래 "그 외". F7 팀 소개 위치는 재검토 중(아래 F7 절 ⏸)
 🔀 **브랜치** — D1 은 `feat/deploy`. 슬라이스 끝에 PR 하나 · `main` 에 직접 커밋·push 하지 않는다 — PR 로만 ([CLAUDE.md](CLAUDE.md))
 
 ### ▶ 다른 PC에서 이어갈 때
@@ -39,7 +39,7 @@
 | 선택 | **Redis 캐시 실습** — 학습용 · 배포에 넣지 않는다. 아래 F6-4 절 "선택 과제" | ⬜ 아무 때나 (2026-11-03 추가) |
 | **F6-5** | **CORS** — 브라우저가 직접 부르는 두 엔드포인트만 | ✅ PR #8 `a4185c9` (2026-11-20) |
 | **F6.5** | **Flyway 전환** — `V1__participant_logs.sql` · `ddl-auto` 는 `validate` 고정 | ✅ PR #9 `4d10883` (2026-11-22) |
-| **D1** | **첫 배포** — Dockerfile · 운영 MySQL 8.4 · 환경변수 · 유휴 회수 없는 호스팅(**AWS 무료 플랜** · 2026-11-14 결정) | 🚧 **진행 중** — 2/4 (아래 "D1 진행") |
+| **D1** | **첫 배포** — Dockerfile · 운영 MySQL 8.4 · 환경변수 · 유휴 회수 없는 호스팅(**AWS 무료 플랜** · 2026-11-14 결정) | 🚧 **진행 중** — 3/4 (아래 "D1 진행") |
 | 연동 | 프론트가 완료 시 `POST` + `ParticipantCount` — 실제 참여자 수·답코드가 쌓이기 시작 | ⬜ (프론트 작업) |
 | F7 | `team_results`(읽기 전용 · Flyway `V2__` + `R__` 시드 15행) + `GET /results` | ⬜ **배포·연동 뒤** — 설계 확정 2026-10-20 · 백엔드 유지 2026-10-27. 상세는 아래 "F7 설계 확정" |
 
@@ -58,7 +58,8 @@
 | --- | --- | --- |
 | 1 | `./gradlew bootJar` → `java -jar` 로 Gradle 없이 기동 | ✅ 2026-11-23 (데스크톱) |
 | 2 | `Dockerfile` · `.dockerignore` → 이미지 빌드 | ✅ 2026-11-23 (데스크톱) |
-| 3 | 컨테이너를 `.env` 없이 환경변수만으로 실행 | ⬜ **← 다음** (Docker Desktop 을 먼저 켠다 — 꺼져 있으면 `docker` 명령이 `open //./pipe/dockerDesktopLinuxEngine` 오류) |
+| 3 | 컨테이너를 `.env` 없이 환경변수만으로 실행 | ✅ 2026-11-23 (데스크톱 · 로컬 MySQL 8.0 에 붙임) |
+| 3+ | 예행 — **빈 MySQL 8.4 컨테이너**에 붙여 Flyway 첫 적용을 본다(운영과 같은 조건) | ⬜ **← 다음** (Docker Desktop 을 먼저 켠다 — 꺼져 있으면 `docker` 명령이 `open //./pipe/dockerDesktopLinuxEngine` 오류) |
 | 4 | AWS (EC2 + RDS · HTTPS) | ⬜ |
 
 **1단계에서 측정한 것** (2026-11-23 · 데스크톱)
@@ -74,6 +75,14 @@
 - 이미지 안 — `linux/amd64` · `WorkingDir /app` · `/app/app.jar` 56,155,756바이트(PC 의 jar 와 같다) · **Temurin 21.0.13**(PC 는 Oracle 21.0.8 — 컨테이너는 PC 의 Java 를 쓰지 않는다) · Ubuntu 26.04 · **시계는 UTC**(jar 시각 04:41 = KST 13:41) · `NEWBEEZ_…` 환경변수 0개 · 실행 계정 root
 - 크기 — 층 합 약 414MB(Ubuntu 117 + 74.8 · Java 166 · **우리 jar 56.2**) · `docker image inspect` 의 Size 172MB(압축본 = 네트워크로 오가는 양) · `docker images` 의 586MB 는 둘의 합(414 + 172). 다시 배포할 때 오가는 것은 바뀐 jar 층뿐 · 이미지 크기는 디스크 문제이지 메모리 문제가 아니다. 이미지는 프로젝트 폴더가 아니라 `%LOCALAPPDATA%\Docker\wsl\disk\docker_data.vhdx` 안(`/var/lib/docker`)에 있다
 - `.dockerignore` 는 허용 목록(`*` + `!build/libs/newbeez-back-0.0.1-SNAPSHOT.jar`). 지금 Dockerfile 에서는 결과가 같다(BuildKit 이 넘긴 것은 처음부터 jar 뿐 — `transferring context: 56.17MB`) — **나중에 `COPY . .` 가 생겨도 `.env` 가 이미지에 못 들어가게 하는 안전장치**다. 확인: 임시 Dockerfile `COPY . /ctx` 로 빌드하면 보이는 파일이 jar 1개뿐 · `.env` 없음
+- **3단계에서 측정한 것** (같은 날)
+  - 설정값 없이 `docker run --rm newbeez-back` → `'url' must start with "jdbc"`. 로그: `PID 1` · `(/app/app.jar started by root in /app)` · 시각 끝이 `Z`(UTC) · **`No active profile set, falling back to 1 default profile: "default"`** — PC 의 `SPRING_PROFILES_ACTIVE=loc` 가 안 들어간다. 컨테이너 안에는 **명시적으로 넘긴 값만** 있다
+  - **컨테이너 안의 `localhost` 는 컨테이너 자신** — 안에서 `localhost:3306` 은 안 닿고 `host.docker.internal:3306`(→ 192.168.65.254 · Docker Desktop 이 주는 이름 · AWS 에는 없다)은 열려 있다
+  - `docker run --rm --env-file .env -e NEWBEEZ_DB_URL=jdbc:mysql://host.docker.internal:3306/newbeez -p 8080:8080 newbeez-back` → 6.1초에 기동 · `Database: jdbc:mysql://host.docker.internal:3306/newbeez (MySQL 8.0)` · `Current version of schema: 1` · **MySQL 계정 `'newbeez'@'localhost'` 가 그대로 통했다** · `{"count":0}` · 허용 출처엔 `Access-Control-Allow-Origin` · 다른 출처 403 · **메모리 358MiB**(`docker stats` — 서버 크기를 정할 때 쓰는 숫자)
+  - `--env-file` 은 Docker 가 **PC 의** 파일을 읽어 환경변수로 넣는 것 — 컨테이너 안에 `.env` 파일은 없다 · 주석·빈 줄·CRLF 그대로 된다 · **`-e` 가 `--env-file` 을 이긴다**(가짜 변수로 확인) → "파일 값 전부 + 하나만 다르게"
+  - `-p 8080:8080` 동안 PC 의 8080 을 쥔 것은 `wslrelay`·`com.docker.backend`(PC 에 java 프로세스 없음). `0.0.0.0` 으로 열린다 → 서버에서 nginx 뒤에 둘 때는 `-p 127.0.0.1:8080:8080` 을 검토
+  - ⚠️ PowerShell 에 긴 한 줄을 붙여 넣다가 `-p` 에서 잘려 `flag needs an argument: 'p' in -p` — 백틱(`` ` ``)으로 줄을 나눠 주거나, 끝이 이미지 이름으로 끝났는지 본다
+  - 종료 — `Ctrl+C` 뒤 `docker ps -a` 가 비었다(`--rm`). 정상 종료 로그(`Commencing graceful shutdown`)는 못 봤다 → 4단계에서 `docker stop` 으로 확인
 - **4단계 전에 손볼 것** — ① AWS `t4g` 는 ARM → `docker buildx build --platform linux/arm64`(바탕 이미지가 arm64 를 제공하는 것은 `docker manifest inspect` 로 확인) ② 컨테이너가 root 로 돈다 → 비root `USER`
 - Windows 의 Docker = Docker Desktop 4.51.0 + WSL 2.6.1(이미 설치돼 있었다 · 켜기만) — 컨테이너는 Linux 프로그램이라 Windows 에선 WSL 이 Linux 를 제공한다(`docker version` 의 server 가 `linux/amd64`). **AWS 서버는 Linux 라 Docker Engine 만 깐다**
 - 설명이 통한 방식 — "그 컴퓨터에 미리 있어야 하는 것"이 줄어드는 순서(소스 + Gradle → jar + Java → 이미지 + Docker) · 이미지 : 컨테이너 = jar : `java` 프로세스 · 파일 내용(IntelliJ)과 명령(터미널)을 **표로 갈라서** 준다 — 한 답에 섞어 주니 "Docker Desktop 에 입력하느냐"고 물었다 · IntelliJ 의 New → File 을 못 찾아 `New-Item <이름> -ItemType File` 로 빈 파일을 만들고 열어서 쳤다
