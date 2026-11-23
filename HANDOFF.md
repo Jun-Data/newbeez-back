@@ -7,7 +7,7 @@
 > - 작업 규칙(역할·커밋·브랜치·스택 주의점) → [CLAUDE.md](CLAUDE.md)
 > - 프론트 진행 상황 → 프론트 레포 `HANDOFF.md`
 
-**마지막 업데이트: 2026-11-23 (데스크톱)** — **F6.5 Flyway 머지됨**(PR #9 · `4d10883` · 테스트 16건) · **두 PC 모두 로컬 전환 끝**(데스크톱 2026-11-23) → **D1 첫 배포 진행 중**(브랜치 `feat/deploy` · 로컬 예행까지 끝(jar · 이미지 · 환경변수 실행 · 빈 MySQL 8.4) · 4단계 준비 끝(비root 계정 · arm64 이미지) · **다음 4단계 AWS — 계정 점검부터**) — 아래 "D1 진행" · 호스팅은 **AWS 무료 플랜**으로 결정 2026-11-14 · 맨 아래 "그 외"). 설계 검토 결정(2026-11-09)은 프론트 브랜치 `docs/review-decisions-2026-11-09`(원격에 올림 · PR 전) · D1 체크리스트는 맨 아래 "그 외". F7 팀 소개 위치는 재검토 중(아래 F7 절 ⏸)
+**마지막 업데이트: 2026-11-23 (데스크톱)** — **F6.5 Flyway 머지됨**(PR #9 · `4d10883` · 테스트 16건) · **두 PC 모두 로컬 전환 끝**(데스크톱 2026-11-23) → **D1 첫 배포 진행 중**(브랜치 `feat/deploy` · 로컬 예행까지 끝(jar · 이미지 · 환경변수 실행 · 빈 MySQL 8.4) · 4단계 준비 끝(비root 계정 · arm64 이미지) · **다음 4단계 AWS — 계정 점검부터**) — 아래 "D1 진행" · 호스팅은 **AWS 무료 플랜**으로 결정 2026-11-14 · 맨 아래 "그 외"). 설계 검토 결정(2026-11-09)은 프론트 `main` 에 머지됨(프론트 PR #10 · `0e095d9` · 브랜치 `docs/review-decisions-2026-11-09` 는 원격에서 삭제됨 — 2026-11-23 확인) · D1 체크리스트는 맨 아래 "그 외". F7 팀 소개 위치는 재검토 중(아래 F7 절 ⏸)
 🔀 **브랜치** — D1 은 `feat/deploy`. 슬라이스 끝에 PR 하나 · `main` 에 직접 커밋·push 하지 않는다 — PR 로만 ([CLAUDE.md](CLAUDE.md))
 
 ### ▶ 다른 PC에서 이어갈 때
@@ -17,11 +17,12 @@
 1. **백엔드** — `git fetch --prune` 후 작업 브랜치로(`git switch <브랜치>` · `git pull`). PR 이 이미 머지됐으면 `git switch main` · `git pull` 하고 머지된 로컬 브랜치는 `git branch -d` 로 지운다(옛 `feat/participant-log` · `feat/participant-api` · `feat/cors` · `feat/flyway` 가 남아 있으면 같이) · **F6.5 로컬 전환(Hibernate 가 만든 옛 표 `DROP` → `bootRun`)은 두 PC 모두 끝났다**(노트북 2026-11-22 · 데스크톱 2026-11-23) — 새 PC 는 빈 DB 라 `bootRun` 만 하면 Flyway 가 V1 로 표와 `flyway_schema_history` 를 만든다. ⚠️ **장부가 없는데 스키마에 표가 하나라도 있으면** Flyway 는 V1 을 실행하기 **전에** ``Found non-empty schema(s) `newbeez` but no schema history table. Use baseline() or set baselineOnMigrate to true …`` 로 기동을 멈춘다 — 장부도 만들지 않고 DB 는 그대로다(2026-11-23 데스크톱 측정 · `Flyway.java:221` · `Successfully validated 1 migration` 은 그 전에 찍힌다. 옛 기록 "`CREATE TABLE` 이 '이미 있음'으로 실패하고 `success=0` 행이 남는다"는 틀렸다) → `SHOW TABLES;` 가 비어야 한다 · ⚠️ **커밋 안 한 변경부터 치운다** — 원격에서 지운 파일(예: 2026-10-29 에 지운 `ParticipantLogRepositoryTest.java`)을 그 PC 에서 고치고 있었다면 `switch` 가 거부되지 않고 **그 파일을 새 브랜치로 조용히 들고 간다**(2026-11-02 노트북 재현). 먼저 커밋하거나 `git stash`
 2. **프론트** — `git switch main` 후 `git pull` (§6 계약: PR #3 `POST /participants` · #4 주소 버전 제거 · #5 참여자 수 · #6 캐시 10초)
 3. **그 PC 의 준비** — 아래 F6-1 표에서 ⬜ 인 것부터(계정 · `.env` — DB 3줄 + `NEWBEEZ_CORS_ALLOWED_ORIGINS` · `NEWBEEZ_DDL_AUTO` 는 **없어야** 한다). `bootRun` 이 뜨면 Flyway 가 그 PC 의 DB 에 `participant_logs` 와 `flyway_schema_history` 를 만든 것이다 — Workbench `SHOW CREATE TABLE participant_logs;` 가 `V1__participant_logs.sql` 과 같은 모양인지(칸 순서 그대로 · `KEY idx_cat_created`) 본다
+   - ⚠️ **Docker 이미지도 PC 를 넘어가지 않는다**(2026-11-23) — `newbeez-back:latest`(amd64) · `newbeez-back:arm64` 는 데스크톱(`jun98`)에만 있다. git 으로 넘어가는 것은 `Dockerfile` · `.dockerignore` 뿐. 그 PC 에서 이미지가 필요해지면(D1 4단계 ④ 이미지 옮기기부터) Docker Desktop 을 켜고 `./gradlew bootJar` → `docker build -t newbeez-back .` → `docker build --platform linux/arm64 -t newbeez-back:arm64 .` 로 다시 만든다(같은 `Dockerfile` + 같은 소스라 같은 이미지가 나온다). 노트북(`이현준`)에 Docker 가 깔려 있는지는 **미확인** — `docker version` 으로 먼저 본다. 4단계 ①~③(AWS 콘솔)은 브라우저 작업이라 Docker 없이 진행된다
 4. **IntelliJ 를 쓰면 세 가지를 먼저 본다** — `.idea` 는 git 이 무시해서 PC마다 설정이 다르다
    - **Project SDK 가 21 인가** (File → Project Structure → Project → SDK). `jun98` PC 에는 실험판 `valhalla-ea-23` 이 잡혀 있었다 → 2026-10-16 `ms-21` (21.0.11) 로 바꿈
    - **실행은 상단 드롭다운의 `NewbeezBackApplication`(Spring Boot) ▶** — Gradle 실행 설정은 task 칸이 비어 있으면 `> Task :help` 만 돌고 앱이 안 켜진다
    - **`build.gradle` 이 바뀌었으면 Gradle 창의 Sync All Gradle Projects** — 안 하면 새 라이브러리의 `import` 가 빨갛다. Gradle 은 그 PC 에서 쓴 것만 받아 두고 30일 안 쓴 캐시는 지운다(2026-11-02 노트북 캐시엔 validation 이 없었다)
-5. 아래 **로드맵에서 ⬜ 인 첫 슬라이스**를 이어간다
+5. 아래 **로드맵에서 ⬜ 인 첫 슬라이스**를 이어간다 — 지금은 **D1 4단계 ① AWS 계정 점검**(아래 "D1 진행"의 "4단계 순서" · 아무것도 만들지 않고 보기만: 루트/IAM 로그인 여부 · 루트 MFA · 크레딧 잔액과 남은 기간 · 예산 알림 유무 · 리전). 2026-11-23 데스크톱에서 이 5가지를 물어 놓고 답을 받기 전에 자리를 옮겼다
 6. ⚠️ **Claude 의 메모리는 PC마다 따로다** — 다른 PC가 알아야 할 결론은 이 파일과 프론트 문서에 옮겨 둔다. 학습 진행 방식과 작업 규칙은 [CLAUDE.md](CLAUDE.md) 에 적었다
 
 ---
