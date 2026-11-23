@@ -7,7 +7,7 @@
 > - 작업 규칙(역할·커밋·브랜치·스택 주의점) → [CLAUDE.md](CLAUDE.md)
 > - 프론트 진행 상황 → 프론트 레포 `HANDOFF.md`
 
-**마지막 업데이트: 2026-11-23 (데스크톱)** — **F6.5 Flyway 머지됨**(PR #9 · `4d10883` · 테스트 16건) · **두 PC 모두 로컬 전환 끝**(데스크톱 2026-11-23) → **다음은 D1 첫 배포**(브랜치 `feat/deploy` · 호스팅은 **AWS 무료 플랜**으로 결정 2026-11-14 · 맨 아래 "그 외"). 설계 검토 결정(2026-11-09)은 프론트 브랜치 `docs/review-decisions-2026-11-09`(원격에 올림 · PR 전) · D1 체크리스트는 맨 아래 "그 외". F7 팀 소개 위치는 재검토 중(아래 F7 절 ⏸)
+**마지막 업데이트: 2026-11-23 (데스크톱)** — **F6.5 Flyway 머지됨**(PR #9 · `4d10883` · 테스트 16건) · **두 PC 모두 로컬 전환 끝**(데스크톱 2026-11-23) → **D1 첫 배포 진행 중**(브랜치 `feat/deploy` · 1단계 jar 끝 · **다음 2단계 Dockerfile** — 아래 "D1 진행" · 호스팅은 **AWS 무료 플랜**으로 결정 2026-11-14 · 맨 아래 "그 외"). 설계 검토 결정(2026-11-09)은 프론트 브랜치 `docs/review-decisions-2026-11-09`(원격에 올림 · PR 전) · D1 체크리스트는 맨 아래 "그 외". F7 팀 소개 위치는 재검토 중(아래 F7 절 ⏸)
 🔀 **브랜치** — D1 은 `feat/deploy`. 슬라이스 끝에 PR 하나 · `main` 에 직접 커밋·push 하지 않는다 — PR 로만 ([CLAUDE.md](CLAUDE.md))
 
 ### ▶ 다른 PC에서 이어갈 때
@@ -39,7 +39,7 @@
 | 선택 | **Redis 캐시 실습** — 학습용 · 배포에 넣지 않는다. 아래 F6-4 절 "선택 과제" | ⬜ 아무 때나 (2026-11-03 추가) |
 | **F6-5** | **CORS** — 브라우저가 직접 부르는 두 엔드포인트만 | ✅ PR #8 `a4185c9` (2026-11-20) |
 | **F6.5** | **Flyway 전환** — `V1__participant_logs.sql` · `ddl-auto` 는 `validate` 고정 | ✅ PR #9 `4d10883` (2026-11-22) |
-| **D1** | **첫 배포** — Dockerfile · 운영 MySQL 8.4 · 환경변수 · 유휴 회수 없는 호스팅(**AWS 무료 플랜** · 2026-11-14 결정) | ⬜ **← 다음** |
+| **D1** | **첫 배포** — Dockerfile · 운영 MySQL 8.4 · 환경변수 · 유휴 회수 없는 호스팅(**AWS 무료 플랜** · 2026-11-14 결정) | 🚧 **진행 중** — 1/4 (아래 "D1 진행") |
 | 연동 | 프론트가 완료 시 `POST` + `ParticipantCount` — 실제 참여자 수·답코드가 쌓이기 시작 | ⬜ (프론트 작업) |
 | F7 | `team_results`(읽기 전용 · Flyway `V2__` + `R__` 시드 15행) + `GET /results` | ⬜ **배포·연동 뒤** — 설계 확정 2026-10-20 · 백엔드 유지 2026-10-27. 상세는 아래 "F7 설계 확정" |
 
@@ -47,6 +47,26 @@
 **팀 콘텐츠는 백엔드에 둔다 (2026-10-27 재검토)** — 프론트 정적 데이터로 옮기는 안을 검토했으나 유지. 팀 소개·인물은 코드와 따로 바뀌는 **편집 콘텐츠**라 DB 가 맞고, 3차 UGC·4차 카테고리도 DB 에 쌓인다. 대가: S8 이후 **백엔드가 죽으면 프론트 새 배포가 실패**한다(기존 결과 페이지는 마지막 성공본 유지) → D1 의 호스팅은 **유휴 회수가 없어야** 한다
 
 이후: 댓글 (2차)
+
+---
+
+## 🚧 D1 첫 배포 — 진행 (브랜치 `feat/deploy`)
+
+코드는 그대로 두고 **실행 환경만** PC 밖으로 옮긴다 — 실행 방법(Gradle → 이미지) · DB(로컬 8.0 → 운영 8.4) · 설정값(`.env` → 환경변수) · 주소(`localhost:8080` → `api.newbeez.kr`).
+
+| | 조각 | 상태 |
+| --- | --- | --- |
+| 1 | `./gradlew bootJar` → `java -jar` 로 Gradle 없이 기동 | ✅ 2026-11-23 (데스크톱) |
+| 2 | `Dockerfile` · `.dockerignore` → 이미지 빌드 | ⬜ **← 다음** (Docker Desktop 을 먼저 켠다 — 2026-11-23 데스크톱에서 꺼져 있었다) |
+| 3 | 컨테이너를 `.env` 없이 환경변수만으로 실행 | ⬜ |
+| 4 | AWS (EC2 + RDS · HTTPS) | ⬜ |
+
+**1단계에서 측정한 것** (2026-11-23 · 데스크톱)
+- **`bootJar` 는 실행용 jar 만 다시 만든다** — `build/libs` 의 `-plain.jar` 는 2026-11-03 것(7,371바이트 · `CorsConfig`·`db/migration` 없음)이 그대로 남았다 → Dockerfile 에서 `COPY build/libs/*.jar` ✗ · 파일 이름을 정확히 쓴다. 실행용 jar 는 56,155,756바이트 · `4 actionable tasks: 1 executed, 3 up-to-date`
+- **jar 안** — `BOOT-INF/classes/`(우리 `.class` 8개 · `application.yml` · `db/migration/V1__participant_logs.sql` — 소스와 바이트까지 같다) · `BOOT-INF/lib/`(라이브러리 jar 77개) · `org/springframework/boot/loader/` · `MANIFEST.MF` 의 `Main-Class: org.springframework.boot.loader.launch.JarLauncher` → `Start-Class: com.newbeez.newbeezback.NewbeezBackApplication`. **`.env` 는 jar 에 없다** — `application.yml` 은 `${…}` 빈칸인 채로 들어간다
+- **`.env` 는 "실행한 폴더"에서 찾는다**(`optional:file:.env` · 로그 첫 줄 끝의 `started by … in <폴더>`). 프로젝트 폴더에서 `java -jar build\libs\…jar` → 기동 · `{"count":0}` · `Access-Control-Allow-Origin` 확인. **`build\libs` 로 들어가 같은 jar 를 켜면 `'url' must start with "jdbc"` 로 죽는다**(Hikari 로그가 한 줄도 없다 · CORS 빈칸보다 DB URL 이 먼저 걸린다) — 컨테이너·서버에서 환경변수를 빠뜨리면 보게 될 오류다
+- jar 로 켠 로그의 차이 — 첫 줄에 `v0.0.1-SNAPSHOT`(매니페스트의 `Implementation-Version`)과 jar 경로 · 스택의 `spring-beans-7.0.8.jar!/` 의 `!/` 는 jar 안의 jar · 맨 아래 프레임이 `JarLauncher.main` → `Launcher.launch` → `NewbeezBackApplication.main`
+- **프론트 호스팅은 Vercel Hobby 유지**(2026-11-23 재확인) — 약관 §4(2026-10-19 개정) "personal or non-commercial use" · 월 한도(전송 100GB · CDN 요청 100만 · 함수 호출 100만)를 넘으면 과금이 아니라 대부분 30일 정지 · 정적 내보내기는 `redirects()`·`next/image` 기본 로더·ISR 이 미지원이라 ✗(Next 16.2.6 번들 문서 `node_modules/next/dist/docs`). 광고를 켜면 Pro — 프론트 FUTURE §6 그대로. "상업 사용"의 정의와 후원 예외 문구는 이날 공식 페이지 본문이 읽히지 않아 프론트 LEGAL §4 의 2026-09-14 기록에 기대고 있다
 
 ---
 
