@@ -7,7 +7,7 @@
 > - 작업 규칙(역할·커밋·브랜치·스택 주의점) → [CLAUDE.md](CLAUDE.md)
 > - 프론트 진행 상황 → 프론트 레포 `HANDOFF.md`
 
-**마지막 업데이트: 2026-11-23 (데스크톱)** — **F6.5 Flyway 머지됨**(PR #9 · `4d10883` · 테스트 16건) · **두 PC 모두 로컬 전환 끝**(데스크톱 2026-11-23) → **D1 첫 배포 진행 중**(브랜치 `feat/deploy` · 로컬 예행까지 끝(jar · 이미지 · 환경변수 실행 · 빈 MySQL 8.4) · **다음 4단계 AWS** — 아래 "D1 진행" · 호스팅은 **AWS 무료 플랜**으로 결정 2026-11-14 · 맨 아래 "그 외"). 설계 검토 결정(2026-11-09)은 프론트 브랜치 `docs/review-decisions-2026-11-09`(원격에 올림 · PR 전) · D1 체크리스트는 맨 아래 "그 외". F7 팀 소개 위치는 재검토 중(아래 F7 절 ⏸)
+**마지막 업데이트: 2026-11-23 (데스크톱)** — **F6.5 Flyway 머지됨**(PR #9 · `4d10883` · 테스트 16건) · **두 PC 모두 로컬 전환 끝**(데스크톱 2026-11-23) → **D1 첫 배포 진행 중**(브랜치 `feat/deploy` · 로컬 예행까지 끝(jar · 이미지 · 환경변수 실행 · 빈 MySQL 8.4) · 4단계 준비 중(비root 계정 ✅ · **다음 arm64 이미지** → AWS) — 아래 "D1 진행" · 호스팅은 **AWS 무료 플랜**으로 결정 2026-11-14 · 맨 아래 "그 외"). 설계 검토 결정(2026-11-09)은 프론트 브랜치 `docs/review-decisions-2026-11-09`(원격에 올림 · PR 전) · D1 체크리스트는 맨 아래 "그 외". F7 팀 소개 위치는 재검토 중(아래 F7 절 ⏸)
 🔀 **브랜치** — D1 은 `feat/deploy`. 슬라이스 끝에 PR 하나 · `main` 에 직접 커밋·push 하지 않는다 — PR 로만 ([CLAUDE.md](CLAUDE.md))
 
 ### ▶ 다른 PC에서 이어갈 때
@@ -60,7 +60,8 @@
 | 2 | `Dockerfile` · `.dockerignore` → 이미지 빌드 | ✅ 2026-11-23 (데스크톱) |
 | 3 | 컨테이너를 `.env` 없이 환경변수만으로 실행 | ✅ 2026-11-23 (데스크톱 · 로컬 MySQL 8.0 에 붙임) |
 | 3+ | 예행 — **빈 MySQL 8.4 컨테이너**에 붙여 Flyway 첫 적용을 본다(운영과 같은 조건) | ✅ 2026-11-23 (데스크톱 · MySQL 8.4.13 · 경고 없음) |
-| 4 | AWS (EC2 + RDS · HTTPS) | ⬜ **← 다음** |
+| 4 준비 | ① 컨테이너를 비root 계정으로 ② arm64 이미지 | ① ✅ 2026-11-23 (데스크톱 · `1898e84`) · ② ⬜ **← 다음** |
+| 4 | AWS (EC2 + RDS · HTTPS) | ⬜ |
 
 **1단계에서 측정한 것** (2026-11-23 · 데스크톱)
 - **`bootJar` 는 실행용 jar 만 다시 만든다** — `build/libs` 의 `-plain.jar` 는 2026-11-03 것(7,371바이트 · `CorsConfig`·`db/migration` 없음)이 그대로 남았다 → Dockerfile 에서 `COPY build/libs/*.jar` ✗ · 파일 이름을 정확히 쓴다. 실행용 jar 는 56,155,756바이트 · `4 actionable tasks: 1 executed, 3 up-to-date`
@@ -70,9 +71,9 @@
 - **프론트 호스팅은 Vercel Hobby 유지**(2026-11-23 재확인) — 약관 §4(2026-10-19 개정) "personal or non-commercial use" · 월 한도(전송 100GB · CDN 요청 100만 · 함수 호출 100만)를 넘으면 과금이 아니라 대부분 30일 정지 · 정적 내보내기는 `redirects()`·`next/image` 기본 로더·ISR 이 미지원이라 ✗(Next 16.2.6 번들 문서 `node_modules/next/dist/docs`). 광고를 켜면 Pro — 프론트 FUTURE §6 그대로. "상업 사용"의 정의와 후원 예외 문구는 이날 공식 페이지 본문이 읽히지 않아 프론트 LEGAL §4 의 2026-09-14 기록에 기대고 있다
 
 **2단계에서 측정한 것** (2026-11-23 · 데스크톱 · Docker 28.5.2)
-- **방식** — jar 는 PC 에서 `./gradlew bootJar` 로 만들고 `Dockerfile`(4줄)은 그 jar 를 복사만 한다. ⚠️ **이미지를 빌드하기 전에 `bootJar` 를 다시 돌린다** — 안 돌리면 옛 jar 가 그대로 들어간다(jar 는 만든 시점의 스냅샷). 이미지 안에서 소스부터 빌드하는 멀티 스테이지는 자동 배포를 붙일 때로 미뤘다
+- **방식** — jar 는 PC 에서 `./gradlew bootJar` 로 만들고 `Dockerfile`(2단계 때 4줄 · 비root 2줄을 더해 지금 6줄)은 그 jar 를 복사만 한다. ⚠️ **이미지를 빌드하기 전에 `bootJar` 를 다시 돌린다** — 안 돌리면 옛 jar 가 그대로 들어간다(jar 는 만든 시점의 스냅샷). 이미지 안에서 소스부터 빌드하는 멀티 스테이지는 자동 배포를 붙일 때로 미뤘다
 - `docker build -t newbeez-back .` — 첫 빌드 20초(바탕 내려받기) · 두 번째 2.3초(`CACHED`). **빌드는 앱을 켜지 않는다**(Spring 로그 없음 · DB 불필요) — `ENTRYPOINT` 는 "켜질 때 실행할 명령"을 적어 두는 것뿐
-- 이미지 안 — `linux/amd64` · `WorkingDir /app` · `/app/app.jar` 56,155,756바이트(PC 의 jar 와 같다) · **Temurin 21.0.13**(PC 는 Oracle 21.0.8 — 컨테이너는 PC 의 Java 를 쓰지 않는다) · Ubuntu 26.04 · **시계는 UTC**(jar 시각 04:41 = KST 13:41) · `NEWBEEZ_…` 환경변수 0개 · 실행 계정 root
+- 이미지 안 — `linux/amd64` · `WorkingDir /app` · `/app/app.jar` 56,155,756바이트(PC 의 jar 와 같다) · **Temurin 21.0.13**(PC 는 Oracle 21.0.8 — 컨테이너는 PC 의 Java 를 쓰지 않는다) · Ubuntu 26.04 · **시계는 UTC**(jar 시각 04:41 = KST 13:41) · `NEWBEEZ_…` 환경변수 0개 · 실행 계정 root(→ 같은 날 `app` 으로 바꿨다 · 아래 "4단계 준비 ①")
 - 크기 — 층 합 약 414MB(Ubuntu 117 + 74.8 · Java 166 · **우리 jar 56.2**) · `docker image inspect` 의 Size 172MB(압축본 = 네트워크로 오가는 양) · `docker images` 의 586MB 는 둘의 합(414 + 172). 다시 배포할 때 오가는 것은 바뀐 jar 층뿐 · 이미지 크기는 디스크 문제이지 메모리 문제가 아니다. 이미지는 프로젝트 폴더가 아니라 `%LOCALAPPDATA%\Docker\wsl\disk\docker_data.vhdx` 안(`/var/lib/docker`)에 있다
 - `.dockerignore` 는 허용 목록(`*` + `!build/libs/newbeez-back-0.0.1-SNAPSHOT.jar`). 지금 Dockerfile 에서는 결과가 같다(BuildKit 이 넘긴 것은 처음부터 jar 뿐 — `transferring context: 56.17MB`) — **나중에 `COPY . .` 가 생겨도 `.env` 가 이미지에 못 들어가게 하는 안전장치**다. 확인: 임시 Dockerfile `COPY . /ctx` 로 빌드하면 보이는 파일이 jar 1개뿐 · `.env` 없음
 - **3단계에서 측정한 것** (같은 날)
@@ -82,7 +83,7 @@
   - `--env-file` 은 Docker 가 **PC 의** 파일을 읽어 환경변수로 넣는 것 — 컨테이너 안에 `.env` 파일은 없다 · 주석·빈 줄·CRLF 그대로 된다 · **`-e` 가 `--env-file` 을 이긴다**(가짜 변수로 확인) → "파일 값 전부 + 하나만 다르게"
   - `-p 8080:8080` 동안 PC 의 8080 을 쥔 것은 `wslrelay`·`com.docker.backend`(PC 에 java 프로세스 없음). `0.0.0.0` 으로 열린다 → 서버에서 nginx 뒤에 둘 때는 `-p 127.0.0.1:8080:8080` 을 검토
   - ⚠️ PowerShell 에 긴 한 줄을 붙여 넣다가 `-p` 에서 잘려 `flag needs an argument: 'p' in -p` — 백틱(`` ` ``)으로 줄을 나눠 주거나, 끝이 이미지 이름으로 끝났는지 본다
-  - 종료 — `Ctrl+C` 뒤 `docker ps -a` 가 비었다(`--rm`). 정상 종료 로그(`Commencing graceful shutdown`)는 못 봤다 → 4단계에서 `docker stop` 으로 확인
+  - 종료 — `Ctrl+C` 뒤 `docker ps -a` 가 비었다(`--rm`). 정상 종료 로그(`Commencing graceful shutdown`)는 못 봤다 → 같은 날 `docker stop` 으로 종료 신호가 닿는 것까지 확인(아래 "4단계 준비 ①" · 로그 글자는 여전히 못 봤다)
 - **예행(빈 MySQL 8.4)에서 측정한 것** (같은 날 · Docker Desktop 이 켜져 있어야 한다 — 꺼져 있으면 `docker` 명령이 `open //./pipe/dockerDesktopLinuxEngine` 오류)
   - 띄우기 — `docker network create newbeez-net` → `docker run -d --name newbeez-mysql --network newbeez-net -e MYSQL_DATABASE=newbeez -e MYSQL_USER=newbeez -e MYSQL_PASSWORD=<예행용> -e MYSQL_ROOT_PASSWORD=<예행용> mysql:8.4`(8.4.13 · **`-p` 없음** — PC 의 3306 과 충돌하지 않고 같은 네트워크의 컨테이너만 접속한다 · 계정은 `newbeez@%` · 서버 시각 UTC · 로그에 `ready for connections` 가 두 번 나오고 `port: 3306` 이 붙은 두 번째가 진짜다) → 앱은 **`.env` 없이 `-e` 4개로**: `docker run --rm --network newbeez-net -e NEWBEEZ_DB_URL=jdbc:mysql://newbeez-mysql:3306/newbeez -e NEWBEEZ_DB_USERNAME=… -e NEWBEEZ_DB_PASSWORD=… -e NEWBEEZ_CORS_ALLOWED_ORIGINS=http://localhost:3000 -p 8080:8080 newbeez-back`
   - **MySQL 8.4.13 + Flyway 12.4.0 — 경고 없이 통과.** `Database: jdbc:mysql://newbeez-mysql:3306/newbeez (MySQL 8.4)` → 첫 적용 로그(F6.5 절과 같은 순서) → `Started … in 6.667 seconds`. `SHOW CREATE TABLE` 은 로컬 8.0 과 글자까지 같다 · 장부 체크섬 **668339657**(세 번째 환경 — Linux 컨테이너가 jar 안의 파일을 읽어도 같다) · **`installed_on` 이 UTC**(06:42:08 — PC 에서는 KST 였다)
@@ -91,9 +92,15 @@
   - ⚠️ MySQL 비밀번호를 `rehearsal-pw-`(끝에 `-`)로 잘못 쳤는데 그대로 계정이 만들어졌다 — **환경변수는 오타를 검사하지 않는다.** 앱에 다른 값을 주면 `Access denied for user 'newbeez'@'…'`. 서버에서 값을 넣을 때 양쪽을 같은 곳에서 복사한다
   - 메모리 — 앱 333~358MiB · MySQL 8.4 445MiB(`docker stats`)
   - 정리 — `docker rm -f -v newbeez-mysql`(`-v` 가 데이터 볼륨까지 지운다) · `docker network rm newbeez-net`. `mysql:8.4` 이미지는 남겨 둔다(다시 예행할 때 내려받지 않는다)
-- **4단계 전에 손볼 것** — ① AWS `t4g` 는 ARM → `docker buildx build --platform linux/arm64`(바탕 이미지가 arm64 를 제공하는 것은 `docker manifest inspect` 로 확인) ② 컨테이너가 root 로 돈다 → 비root `USER`
+- **4단계 준비 ① 비root 계정에서 측정한 것** (같은 날 · 커밋 `1898e84`)
+  - `Dockerfile` 에 2줄 — `RUN useradd --system --uid 10001 app` 은 **`COPY` 위**(jar 가 바뀌어도 이 층은 캐시) · `USER app` 은 **`COPY` 아래**(jar 의 주인이 root 로 남는다). 2번째 줄에 끼워 넣자 글자가 그대로인 `WORKDIR`·`COPY` 도 다시 실행됐다(`CACHED` 는 `[1/4]` 뿐 · 7.9초) — 층은 앞 층 위에 쌓인다
+  - `docker run --rm --entrypoint id newbeez-back` → `uid=10001(app) gid=999(app)`(앱을 켜지 않고 계정만 본다) · 이미지 설정 `User=app` · `/app/app.jar` 는 `0:0 -rwxr-xr-x` → `app` 계정으로 `/app` 에 파일 만들기 · jar 덧쓰기 둘 다 `Permission denied` · `/tmp` 쓰기는 된다(내장 Tomcat 작업 폴더가 여기 생긴다)
+  - 이 계정으로 기동 — `docker run --rm --name newbeez-app --env-file .env -e NEWBEEZ_DB_URL=jdbc:mysql://host.docker.internal:3306/newbeez -p 8080:8080 newbeez-back` → 9분 동안 떠 있었다 · `docker exec newbeez-app ps -eo user,pid,args` → `app 1 java -jar app.jar` — **PID 1 이 `sh` 가 아니라 `java`** 다(`ENTRYPOINT` 를 JSON 배열로 쓴 결과 · 신호를 `java` 가 직접 받는다)
+  - **종료 신호가 앱에 닿는다** — `docker stop newbeez-app` → `docker events` 기록: `kill signal=15` → **0.34초 뒤** `die exitCode=143`(128 + 15 = SIGTERM 을 받고 스스로 끝남). 신호가 안 닿았다면 10초 유예 뒤 `signal=9` · `137` 이 찍힌다. ⚠️ 근거는 이벤트 기록이다 — 터미널의 `Commencing graceful shutdown` 줄은 아직 눈으로 확인하지 못했다
+  - `--rm` 컨테이너는 끝나면 로그도 사라진다(`docker logs` ✗) — 지나간 실행은 `docker events --since 30m --until 0s --filter container=<이름>` 으로 본다
+- **4단계 준비 ② arm64 이미지** ⬜ — AWS `t4g` 는 ARM 인데 지금 이미지는 `linux/amd64`. 확인해 둔 것: 바탕 `eclipse-temurin:21-jre` 가 `linux/arm64/v8` 을 제공한다(`docker buildx imagetools inspect`) · 이 PC 의 빌더가 `linux/arm64` 를 지원한다(`docker buildx ls`) · 이미지 저장소가 containerd(`docker info` 의 `driver-type io.containerd.snapshotter.v1`)라 다른 CPU 용 이미지도 로컬에 담긴다 → `docker build --platform linux/arm64 -t newbeez-back:arm64 .`(jar 는 CPU 를 가리지 않으니 `bootJar` 는 다시 안 돌린다 · `latest` 는 amd64 로 남겨 로컬 실행에 쓴다)
 - Windows 의 Docker = Docker Desktop 4.51.0 + WSL 2.6.1(이미 설치돼 있었다 · 켜기만) — 컨테이너는 Linux 프로그램이라 Windows 에선 WSL 이 Linux 를 제공한다(`docker version` 의 server 가 `linux/amd64`). **AWS 서버는 Linux 라 Docker Engine 만 깐다**
-- 설명이 통한 방식 — "그 컴퓨터에 미리 있어야 하는 것"이 줄어드는 순서(소스 + Gradle → jar + Java → 이미지 + Docker) · 이미지 : 컨테이너 = jar : `java` 프로세스 · 파일 내용(IntelliJ)과 명령(터미널)을 **표로 갈라서** 준다 — 한 답에 섞어 주니 "Docker Desktop 에 입력하느냐"고 물었다 · IntelliJ 의 New → File 을 못 찾아 `New-Item <이름> -ItemType File` 로 빈 파일을 만들고 열어서 쳤다
+- 설명이 통한 방식 — "그 컴퓨터에 미리 있어야 하는 것"이 줄어드는 순서(소스 + Gradle → jar + Java → 이미지 + Docker) · 이미지 : 컨테이너 = jar : `java` 프로세스 · 파일 내용(IntelliJ)과 명령(터미널)을 **표로 갈라서** 준다 — 한 답에 섞어 주니 "Docker Desktop 에 입력하느냐"고 물었다 · IntelliJ 의 New → File 을 못 찾아 `New-Item <이름> -ItemType File` 로 빈 파일을 만들고 열어서 쳤다 · **DB 주소는 "앱이 있는 자리에서 본 DB 의 위치"** 를 표(앱 위치 × DB 위치 → 주소)로 — "MySQL 은 컨테이너 아니었나"를 물었다(예행용 컨테이너를 지운 것과 지금 붙는 DB 가 헷갈렸다) · 예행용 MySQL 컨테이너는 만들려는 것이 아니라 **RDS 를 흉내 낸 일회용 측정 도구** · 실행마다 "바꾼 것 하나 · 확인한 질문 하나"를 표로
 
 ---
 
