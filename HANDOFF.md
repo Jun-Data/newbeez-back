@@ -7,7 +7,7 @@
 > - 작업 규칙(역할·커밋·브랜치·스택 주의점) → [CLAUDE.md](CLAUDE.md)
 > - 프론트 진행 상황 → 프론트 레포 `HANDOFF.md`
 
-**마지막 업데이트: 2026-11-23 (데스크톱)** — **F6.5 Flyway 머지됨**(PR #9 · `4d10883` · 테스트 16건) · **두 PC 모두 로컬 전환 끝**(데스크톱 2026-11-23) → **D1 첫 배포 진행 중**(브랜치 `feat/deploy` · 1단계 jar 끝 · **다음 2단계 Dockerfile** — 아래 "D1 진행" · 호스팅은 **AWS 무료 플랜**으로 결정 2026-11-14 · 맨 아래 "그 외"). 설계 검토 결정(2026-11-09)은 프론트 브랜치 `docs/review-decisions-2026-11-09`(원격에 올림 · PR 전) · D1 체크리스트는 맨 아래 "그 외". F7 팀 소개 위치는 재검토 중(아래 F7 절 ⏸)
+**마지막 업데이트: 2026-11-23 (데스크톱)** — **F6.5 Flyway 머지됨**(PR #9 · `4d10883` · 테스트 16건) · **두 PC 모두 로컬 전환 끝**(데스크톱 2026-11-23) → **D1 첫 배포 진행 중**(브랜치 `feat/deploy` · 2단계 이미지까지 끝 · **다음 3단계 컨테이너 실행** — 아래 "D1 진행" · 호스팅은 **AWS 무료 플랜**으로 결정 2026-11-14 · 맨 아래 "그 외"). 설계 검토 결정(2026-11-09)은 프론트 브랜치 `docs/review-decisions-2026-11-09`(원격에 올림 · PR 전) · D1 체크리스트는 맨 아래 "그 외". F7 팀 소개 위치는 재검토 중(아래 F7 절 ⏸)
 🔀 **브랜치** — D1 은 `feat/deploy`. 슬라이스 끝에 PR 하나 · `main` 에 직접 커밋·push 하지 않는다 — PR 로만 ([CLAUDE.md](CLAUDE.md))
 
 ### ▶ 다른 PC에서 이어갈 때
@@ -39,7 +39,7 @@
 | 선택 | **Redis 캐시 실습** — 학습용 · 배포에 넣지 않는다. 아래 F6-4 절 "선택 과제" | ⬜ 아무 때나 (2026-11-03 추가) |
 | **F6-5** | **CORS** — 브라우저가 직접 부르는 두 엔드포인트만 | ✅ PR #8 `a4185c9` (2026-11-20) |
 | **F6.5** | **Flyway 전환** — `V1__participant_logs.sql` · `ddl-auto` 는 `validate` 고정 | ✅ PR #9 `4d10883` (2026-11-22) |
-| **D1** | **첫 배포** — Dockerfile · 운영 MySQL 8.4 · 환경변수 · 유휴 회수 없는 호스팅(**AWS 무료 플랜** · 2026-11-14 결정) | 🚧 **진행 중** — 1/4 (아래 "D1 진행") |
+| **D1** | **첫 배포** — Dockerfile · 운영 MySQL 8.4 · 환경변수 · 유휴 회수 없는 호스팅(**AWS 무료 플랜** · 2026-11-14 결정) | 🚧 **진행 중** — 2/4 (아래 "D1 진행") |
 | 연동 | 프론트가 완료 시 `POST` + `ParticipantCount` — 실제 참여자 수·답코드가 쌓이기 시작 | ⬜ (프론트 작업) |
 | F7 | `team_results`(읽기 전용 · Flyway `V2__` + `R__` 시드 15행) + `GET /results` | ⬜ **배포·연동 뒤** — 설계 확정 2026-10-20 · 백엔드 유지 2026-10-27. 상세는 아래 "F7 설계 확정" |
 
@@ -57,8 +57,8 @@
 | | 조각 | 상태 |
 | --- | --- | --- |
 | 1 | `./gradlew bootJar` → `java -jar` 로 Gradle 없이 기동 | ✅ 2026-11-23 (데스크톱) |
-| 2 | `Dockerfile` · `.dockerignore` → 이미지 빌드 | ⬜ **← 다음** (Docker Desktop 을 먼저 켠다 — 2026-11-23 데스크톱에서 꺼져 있었다) |
-| 3 | 컨테이너를 `.env` 없이 환경변수만으로 실행 | ⬜ |
+| 2 | `Dockerfile` · `.dockerignore` → 이미지 빌드 | ✅ 2026-11-23 (데스크톱) |
+| 3 | 컨테이너를 `.env` 없이 환경변수만으로 실행 | ⬜ **← 다음** (Docker Desktop 을 먼저 켠다 — 꺼져 있으면 `docker` 명령이 `open //./pipe/dockerDesktopLinuxEngine` 오류) |
 | 4 | AWS (EC2 + RDS · HTTPS) | ⬜ |
 
 **1단계에서 측정한 것** (2026-11-23 · 데스크톱)
@@ -67,6 +67,16 @@
 - **`.env` 는 "실행한 폴더"에서 찾는다**(`optional:file:.env` · 로그 첫 줄 끝의 `started by … in <폴더>`). 프로젝트 폴더에서 `java -jar build\libs\…jar` → 기동 · `{"count":0}` · `Access-Control-Allow-Origin` 확인. **`build\libs` 로 들어가 같은 jar 를 켜면 `'url' must start with "jdbc"` 로 죽는다**(Hikari 로그가 한 줄도 없다 · CORS 빈칸보다 DB URL 이 먼저 걸린다) — 컨테이너·서버에서 환경변수를 빠뜨리면 보게 될 오류다
 - jar 로 켠 로그의 차이 — 첫 줄에 `v0.0.1-SNAPSHOT`(매니페스트의 `Implementation-Version`)과 jar 경로 · 스택의 `spring-beans-7.0.8.jar!/` 의 `!/` 는 jar 안의 jar · 맨 아래 프레임이 `JarLauncher.main` → `Launcher.launch` → `NewbeezBackApplication.main`
 - **프론트 호스팅은 Vercel Hobby 유지**(2026-11-23 재확인) — 약관 §4(2026-10-19 개정) "personal or non-commercial use" · 월 한도(전송 100GB · CDN 요청 100만 · 함수 호출 100만)를 넘으면 과금이 아니라 대부분 30일 정지 · 정적 내보내기는 `redirects()`·`next/image` 기본 로더·ISR 이 미지원이라 ✗(Next 16.2.6 번들 문서 `node_modules/next/dist/docs`). 광고를 켜면 Pro — 프론트 FUTURE §6 그대로. "상업 사용"의 정의와 후원 예외 문구는 이날 공식 페이지 본문이 읽히지 않아 프론트 LEGAL §4 의 2026-09-14 기록에 기대고 있다
+
+**2단계에서 측정한 것** (2026-11-23 · 데스크톱 · Docker 28.5.2)
+- **방식** — jar 는 PC 에서 `./gradlew bootJar` 로 만들고 `Dockerfile`(4줄)은 그 jar 를 복사만 한다. ⚠️ **이미지를 빌드하기 전에 `bootJar` 를 다시 돌린다** — 안 돌리면 옛 jar 가 그대로 들어간다(jar 는 만든 시점의 스냅샷). 이미지 안에서 소스부터 빌드하는 멀티 스테이지는 자동 배포를 붙일 때로 미뤘다
+- `docker build -t newbeez-back .` — 첫 빌드 20초(바탕 내려받기) · 두 번째 2.3초(`CACHED`). **빌드는 앱을 켜지 않는다**(Spring 로그 없음 · DB 불필요) — `ENTRYPOINT` 는 "켜질 때 실행할 명령"을 적어 두는 것뿐
+- 이미지 안 — `linux/amd64` · `WorkingDir /app` · `/app/app.jar` 56,155,756바이트(PC 의 jar 와 같다) · **Temurin 21.0.13**(PC 는 Oracle 21.0.8 — 컨테이너는 PC 의 Java 를 쓰지 않는다) · Ubuntu 26.04 · **시계는 UTC**(jar 시각 04:41 = KST 13:41) · `NEWBEEZ_…` 환경변수 0개 · 실행 계정 root
+- 크기 — 층 합 약 414MB(Ubuntu 117 + 74.8 · Java 166 · **우리 jar 56.2**) · `docker image inspect` 의 Size 172MB(압축본 = 네트워크로 오가는 양) · `docker images` 의 586MB 는 둘의 합(414 + 172). 다시 배포할 때 오가는 것은 바뀐 jar 층뿐 · 이미지 크기는 디스크 문제이지 메모리 문제가 아니다. 이미지는 프로젝트 폴더가 아니라 `%LOCALAPPDATA%\Docker\wsl\disk\docker_data.vhdx` 안(`/var/lib/docker`)에 있다
+- `.dockerignore` 는 허용 목록(`*` + `!build/libs/newbeez-back-0.0.1-SNAPSHOT.jar`). 지금 Dockerfile 에서는 결과가 같다(BuildKit 이 넘긴 것은 처음부터 jar 뿐 — `transferring context: 56.17MB`) — **나중에 `COPY . .` 가 생겨도 `.env` 가 이미지에 못 들어가게 하는 안전장치**다. 확인: 임시 Dockerfile `COPY . /ctx` 로 빌드하면 보이는 파일이 jar 1개뿐 · `.env` 없음
+- **4단계 전에 손볼 것** — ① AWS `t4g` 는 ARM → `docker buildx build --platform linux/arm64`(바탕 이미지가 arm64 를 제공하는 것은 `docker manifest inspect` 로 확인) ② 컨테이너가 root 로 돈다 → 비root `USER`
+- Windows 의 Docker = Docker Desktop 4.51.0 + WSL 2.6.1(이미 설치돼 있었다 · 켜기만) — 컨테이너는 Linux 프로그램이라 Windows 에선 WSL 이 Linux 를 제공한다(`docker version` 의 server 가 `linux/amd64`). **AWS 서버는 Linux 라 Docker Engine 만 깐다**
+- 설명이 통한 방식 — "그 컴퓨터에 미리 있어야 하는 것"이 줄어드는 순서(소스 + Gradle → jar + Java → 이미지 + Docker) · 이미지 : 컨테이너 = jar : `java` 프로세스 · 파일 내용(IntelliJ)과 명령(터미널)을 **표로 갈라서** 준다 — 한 답에 섞어 주니 "Docker Desktop 에 입력하느냐"고 물었다 · IntelliJ 의 New → File 을 못 찾아 `New-Item <이름> -ItemType File` 로 빈 파일을 만들고 열어서 쳤다
 
 ---
 
@@ -269,7 +279,7 @@
 - **D1 준비물** — Docker 28.5.2 가 `jun98` PC 에 있다(Dockerfile 시험 가능) · 레포에 Dockerfile 은 아직 없다 · `./gradlew bootJar` 가 만드는 실행용 jar(`build/libs/newbeez-back-0.0.1-SNAPSHOT.jar` · 약 55MB · 라이브러리 포함 · 테스트를 안 돌려 DB 없이 만들어진다)가 컨테이너에 넣을 파일이다. `-plain.jar` 는 우리 코드만이라 혼자 실행되지 않는다
 - **D1 배포 확인에 넣을 것** — 운영 환경변수에 `NEWBEEZ_CORS_ALLOWED_ORIGINS`(운영 프론트 주소 · 로컬 주소는 빼도 된다)를 넣고, 띄운 뒤 **`Origin: <운영 프론트 주소>` 를 붙인 GET count(⑬ 모양)** 를 보내 `Access-Control-Allow-Origin` 이 오는지 본다 — 값이 비어 있으면 Origin 없는 확인(헬스 체크)은 200 이라 놓친다(F6-5 2-3 실측)
 - **D1 체크리스트** (2026-11-09 jar·공식 문서 검증 — 근거는 그날 커밋 본문)
-  - **이미지** — `./gradlew bootJar` · `.dockerignore` 에 `build/`·`.env`(없으면 낡은 `-plain.jar` 가 따라 들어가 `COPY *.jar` 가 깨진다) · `ENTRYPOINT` 는 exec form `["java","-jar",…]`(shell form 은 SIGTERM 을 못 받는다) · arm64 서버(Oracle A1 · AWS Graviton)면 `docker buildx build --platform linux/arm64`
+  - **이미지** — ✅ 2026-11-23 만들었다(위 "D1 진행" 2단계 · jar 는 PC 에서 `./gradlew bootJar` · `COPY` 는 파일 이름을 정확히 · `.dockerignore` 는 허용 목록 — 옛 계획의 "`build/`·`.env` 제외"는 이미지 안에서 빌드하는 방식을 가정한 것이었다) · `ENTRYPOINT` 는 exec form `["java","-jar",…]`(shell form 은 SIGTERM 을 못 받는다) · arm64 서버(Oracle A1 · AWS Graviton)면 `docker buildx build --platform linux/arm64`
   - **종료** — graceful 은 Boot 3.4 부터 기본값이라 설정하지 않는다. `docker stop` 유예 10초가 Boot 대기 30초보다 짧으니 한쪽을 맞춘다
   - **헬스** — `spring-boot-starter-actuator` 한 줄이면 `/actuator/health`(DB 가 죽으면 503 · 노출 기본값이 이미 health 뿐). ⚠️ DB 가 꺼진 채 기동하면 503 이 아니라 앱이 안 뜬다 → 호스팅 자동 재시작 설정과 함께 본다
   - **시간대** — 운영 JDBC URL 끝에 `?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true`(`NOW()`·수동 INSERT 까지 UTC) · `hibernate.jdbc.time_zone` 은 넣지 않는다 · 배포 뒤 1회 실측
