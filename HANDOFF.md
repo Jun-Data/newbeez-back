@@ -7,7 +7,7 @@
 > - 작업 규칙(역할·커밋·브랜치·스택 주의점) → [CLAUDE.md](CLAUDE.md)
 > - 프론트 진행 상황 → 프론트 레포 `HANDOFF.md`
 
-**마지막 업데이트: 2026-11-23 (데스크톱)** — **F6.5 Flyway 머지됨**(PR #9 · `4d10883` · 테스트 16건) · **두 PC 모두 로컬 전환 끝**(데스크톱 2026-11-23) → **D1 첫 배포 진행 중**(브랜치 `feat/deploy` · 3단계 컨테이너 실행까지 끝 · **다음 빈 MySQL 8.4 예행 → 4단계 AWS** — 아래 "D1 진행" · 호스팅은 **AWS 무료 플랜**으로 결정 2026-11-14 · 맨 아래 "그 외"). 설계 검토 결정(2026-11-09)은 프론트 브랜치 `docs/review-decisions-2026-11-09`(원격에 올림 · PR 전) · D1 체크리스트는 맨 아래 "그 외". F7 팀 소개 위치는 재검토 중(아래 F7 절 ⏸)
+**마지막 업데이트: 2026-11-23 (데스크톱)** — **F6.5 Flyway 머지됨**(PR #9 · `4d10883` · 테스트 16건) · **두 PC 모두 로컬 전환 끝**(데스크톱 2026-11-23) → **D1 첫 배포 진행 중**(브랜치 `feat/deploy` · 로컬 예행까지 끝(jar · 이미지 · 환경변수 실행 · 빈 MySQL 8.4) · **다음 4단계 AWS** — 아래 "D1 진행" · 호스팅은 **AWS 무료 플랜**으로 결정 2026-11-14 · 맨 아래 "그 외"). 설계 검토 결정(2026-11-09)은 프론트 브랜치 `docs/review-decisions-2026-11-09`(원격에 올림 · PR 전) · D1 체크리스트는 맨 아래 "그 외". F7 팀 소개 위치는 재검토 중(아래 F7 절 ⏸)
 🔀 **브랜치** — D1 은 `feat/deploy`. 슬라이스 끝에 PR 하나 · `main` 에 직접 커밋·push 하지 않는다 — PR 로만 ([CLAUDE.md](CLAUDE.md))
 
 ### ▶ 다른 PC에서 이어갈 때
@@ -59,8 +59,8 @@
 | 1 | `./gradlew bootJar` → `java -jar` 로 Gradle 없이 기동 | ✅ 2026-11-23 (데스크톱) |
 | 2 | `Dockerfile` · `.dockerignore` → 이미지 빌드 | ✅ 2026-11-23 (데스크톱) |
 | 3 | 컨테이너를 `.env` 없이 환경변수만으로 실행 | ✅ 2026-11-23 (데스크톱 · 로컬 MySQL 8.0 에 붙임) |
-| 3+ | 예행 — **빈 MySQL 8.4 컨테이너**에 붙여 Flyway 첫 적용을 본다(운영과 같은 조건) | ⬜ **← 다음** (Docker Desktop 을 먼저 켠다 — 꺼져 있으면 `docker` 명령이 `open //./pipe/dockerDesktopLinuxEngine` 오류) |
-| 4 | AWS (EC2 + RDS · HTTPS) | ⬜ |
+| 3+ | 예행 — **빈 MySQL 8.4 컨테이너**에 붙여 Flyway 첫 적용을 본다(운영과 같은 조건) | ✅ 2026-11-23 (데스크톱 · MySQL 8.4.13 · 경고 없음) |
+| 4 | AWS (EC2 + RDS · HTTPS) | ⬜ **← 다음** |
 
 **1단계에서 측정한 것** (2026-11-23 · 데스크톱)
 - **`bootJar` 는 실행용 jar 만 다시 만든다** — `build/libs` 의 `-plain.jar` 는 2026-11-03 것(7,371바이트 · `CorsConfig`·`db/migration` 없음)이 그대로 남았다 → Dockerfile 에서 `COPY build/libs/*.jar` ✗ · 파일 이름을 정확히 쓴다. 실행용 jar 는 56,155,756바이트 · `4 actionable tasks: 1 executed, 3 up-to-date`
@@ -83,6 +83,14 @@
   - `-p 8080:8080` 동안 PC 의 8080 을 쥔 것은 `wslrelay`·`com.docker.backend`(PC 에 java 프로세스 없음). `0.0.0.0` 으로 열린다 → 서버에서 nginx 뒤에 둘 때는 `-p 127.0.0.1:8080:8080` 을 검토
   - ⚠️ PowerShell 에 긴 한 줄을 붙여 넣다가 `-p` 에서 잘려 `flag needs an argument: 'p' in -p` — 백틱(`` ` ``)으로 줄을 나눠 주거나, 끝이 이미지 이름으로 끝났는지 본다
   - 종료 — `Ctrl+C` 뒤 `docker ps -a` 가 비었다(`--rm`). 정상 종료 로그(`Commencing graceful shutdown`)는 못 봤다 → 4단계에서 `docker stop` 으로 확인
+- **예행(빈 MySQL 8.4)에서 측정한 것** (같은 날 · Docker Desktop 이 켜져 있어야 한다 — 꺼져 있으면 `docker` 명령이 `open //./pipe/dockerDesktopLinuxEngine` 오류)
+  - 띄우기 — `docker network create newbeez-net` → `docker run -d --name newbeez-mysql --network newbeez-net -e MYSQL_DATABASE=newbeez -e MYSQL_USER=newbeez -e MYSQL_PASSWORD=<예행용> -e MYSQL_ROOT_PASSWORD=<예행용> mysql:8.4`(8.4.13 · **`-p` 없음** — PC 의 3306 과 충돌하지 않고 같은 네트워크의 컨테이너만 접속한다 · 계정은 `newbeez@%` · 서버 시각 UTC · 로그에 `ready for connections` 가 두 번 나오고 `port: 3306` 이 붙은 두 번째가 진짜다) → 앱은 **`.env` 없이 `-e` 4개로**: `docker run --rm --network newbeez-net -e NEWBEEZ_DB_URL=jdbc:mysql://newbeez-mysql:3306/newbeez -e NEWBEEZ_DB_USERNAME=… -e NEWBEEZ_DB_PASSWORD=… -e NEWBEEZ_CORS_ALLOWED_ORIGINS=http://localhost:3000 -p 8080:8080 newbeez-back`
+  - **MySQL 8.4.13 + Flyway 12.4.0 — 경고 없이 통과.** `Database: jdbc:mysql://newbeez-mysql:3306/newbeez (MySQL 8.4)` → 첫 적용 로그(F6.5 절과 같은 순서) → `Started … in 6.667 seconds`. `SHOW CREATE TABLE` 은 로컬 8.0 과 글자까지 같다 · 장부 체크섬 **668339657**(세 번째 환경 — Linux 컨테이너가 jar 안의 파일을 읽어도 같다) · **`installed_on` 이 UTC**(06:42:08 — PC 에서는 KST 였다)
+  - 쓰기 경로 — `POST /api/participants`(`.http` ① 모양 + `Origin`) → 201 + `Access-Control-Allow-Origin` · 행의 `created_at` 06:42:36 이 `UTC_TIMESTAMP()` 와 1초 차 · `{"count":1}`. **JDBC 시간대 옵션 없이도 UTC 로 들어갔다 — 컨테이너의 JVM 과 DB 서버가 둘 다 UTC 였기 때문**이다. 옵션(`connectionTimeZone=UTC…`)이 일하는 것은 DB 서버 시간대가 UTC 가 아닐 때 → RDS 에서 실측으로 정한다
+  - **컨테이너끼리는 이름으로 찾는다**(같은 사용자 정의 네트워크 · `newbeez-mysql` → 172.19.0.2). DB 주소가 하루에 세 번 바뀌었고(`localhost` → `host.docker.internal` → `newbeez-mysql`) 이미지는 한 글자도 안 바뀌었다
+  - ⚠️ MySQL 비밀번호를 `rehearsal-pw-`(끝에 `-`)로 잘못 쳤는데 그대로 계정이 만들어졌다 — **환경변수는 오타를 검사하지 않는다.** 앱에 다른 값을 주면 `Access denied for user 'newbeez'@'…'`. 서버에서 값을 넣을 때 양쪽을 같은 곳에서 복사한다
+  - 메모리 — 앱 333~358MiB · MySQL 8.4 445MiB(`docker stats`)
+  - 정리 — `docker rm -f -v newbeez-mysql`(`-v` 가 데이터 볼륨까지 지운다) · `docker network rm newbeez-net`. `mysql:8.4` 이미지는 남겨 둔다(다시 예행할 때 내려받지 않는다)
 - **4단계 전에 손볼 것** — ① AWS `t4g` 는 ARM → `docker buildx build --platform linux/arm64`(바탕 이미지가 arm64 를 제공하는 것은 `docker manifest inspect` 로 확인) ② 컨테이너가 root 로 돈다 → 비root `USER`
 - Windows 의 Docker = Docker Desktop 4.51.0 + WSL 2.6.1(이미 설치돼 있었다 · 켜기만) — 컨테이너는 Linux 프로그램이라 Windows 에선 WSL 이 Linux 를 제공한다(`docker version` 의 server 가 `linux/amd64`). **AWS 서버는 Linux 라 Docker Engine 만 깐다**
 - 설명이 통한 방식 — "그 컴퓨터에 미리 있어야 하는 것"이 줄어드는 순서(소스 + Gradle → jar + Java → 이미지 + Docker) · 이미지 : 컨테이너 = jar : `java` 프로세스 · 파일 내용(IntelliJ)과 명령(터미널)을 **표로 갈라서** 준다 — 한 답에 섞어 주니 "Docker Desktop 에 입력하느냐"고 물었다 · IntelliJ 의 New → File 을 못 찾아 `New-Item <이름> -ItemType File` 로 빈 파일을 만들고 열어서 쳤다
@@ -292,7 +300,7 @@
   - **종료** — graceful 은 Boot 3.4 부터 기본값이라 설정하지 않는다. `docker stop` 유예 10초가 Boot 대기 30초보다 짧으니 한쪽을 맞춘다
   - **헬스** — `spring-boot-starter-actuator` 한 줄이면 `/actuator/health`(DB 가 죽으면 503 · 노출 기본값이 이미 health 뿐). ⚠️ DB 가 꺼진 채 기동하면 503 이 아니라 앱이 안 뜬다 → 호스팅 자동 재시작 설정과 함께 본다
   - **시간대** — 운영 JDBC URL 끝에 `?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true`(`NOW()`·수동 INSERT 까지 UTC) · `hibernate.jdbc.time_zone` 은 넣지 않는다 · 배포 뒤 1회 실측
-  - **DB** — 운영 DB 는 **빈 DB** 로 만들고 첫 기동 때 Flyway 가 `V1` 로 표를 만든다(baseline 불필요 · 로컬처럼 `DROP` 할 것이 없다 · 표가 하나라도 먼저 있으면 `Found non-empty schema(s)` 로 기동이 멈춘다 — 위 "다른 PC" 절 1번). MySQL 8.4 + Flyway 12.4 조합은 여기서 1회 검증 · 기동 로그에 `Migrating schema … to version "1 - participant logs"` 가 찍히는지 본다
+  - **DB** — 운영 DB 는 **빈 DB** 로 만들고 첫 기동 때 Flyway 가 `V1` 로 표를 만든다(baseline 불필요 · 로컬처럼 `DROP` 할 것이 없다 · 표가 하나라도 먼저 있으면 `Found non-empty schema(s)` 로 기동이 멈춘다 — 위 "다른 PC" 절 1번). MySQL 8.4 + Flyway 12.4 조합은 여기서 1회 검증(로컬 예행 2026-11-23 — `mysql:8.4.13` 컨테이너에서 경고 없이 통과 · RDS 에서 한 번 더 본다) · 기동 로그에 `Migrating schema … to version "1 - participant logs"` 가 찍히는지 본다
   - **Testcontainers 는 F6.5 뒤** — 좌표는 2.x 이름(`org.testcontainers:testcontainers-mysql`) · 로컬 MySQL 대신 Docker 가 필요해진다
 - **락인 방어(지금부터 적용)**: 컨테이너화 · DB 접속은 환경변수로만 · Flyway · 트리거/프로시저 금지
 - **Instagram 임베드 테스트 페이지** `C:\dev\embed-test\index.html` (`이현준` PC · git 밖) — 327px 본문에 게시물/캡션/계정 카드 3종을 띄우고 렌더 시간·크기를 재는 정적 HTML. `python -m http.server 8000 --bind 127.0.0.1 --directory C:\dev\embed-test` 로 열람. 2026-10-20 PC 크롬 확인 · 아이폰 카톡 인앱은 사용자가 확인함(노트북 기록 · 프론트 §9 #6 반영은 위 "프론트에 넘길 것")
